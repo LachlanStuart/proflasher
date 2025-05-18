@@ -8,11 +8,8 @@ import { CardProposalMessage } from "~/components/chat/CardProposalMessage";
 import { ErrorMessage } from "~/components/chat/ErrorMessage";
 import templates from "~/lib/cardModel/noteTemplates";
 
-// LLM model names
-const LLM_MODEL_NAME = [
-    "gemini-2.5-flash-preview-04-17",
-    "gemini-2.5-pro-exp-03-25",
-];
+// LLM model name
+const LLM_MODEL_NAME = "gemini-2.5-flash-preview-04-17";
 
 // Message types for conversation history
 interface UserMessage {
@@ -54,8 +51,13 @@ export default function ChatPage() {
     const [messages, setMessages] = useState<ConversationMessage[]>([]);
     const [inputText, setInputText] = useState("");
     const [isLoading, setIsLoading] = useState(false);
-    const [selectedLanguage, setSelectedLanguage] = useState("zh");
-    const [selectedModel, setSelectedModel] = useState<string>(LLM_MODEL_NAME[0]);
+    const [selectedLanguage, setSelectedLanguage] = useState<string>(() => {
+        // Initialize from localStorage if available, otherwise default to "fr"
+        if (typeof window !== 'undefined') {
+            return localStorage.getItem('selectedLanguage') || "fr";
+        }
+        return "fr";
+    });
     const [availableLanguages, setAvailableLanguages] = useState<string[]>([]);
     const [isAddingAllCards, setIsAddingAllCards] = useState(false);
     const messageEndRef = useRef<HTMLDivElement>(null);
@@ -79,6 +81,13 @@ export default function ChatPage() {
         fetchLanguages();
     }, []);
 
+    // Save selected language to localStorage whenever it changes
+    useEffect(() => {
+        if (typeof window !== 'undefined' && selectedLanguage) {
+            localStorage.setItem('selectedLanguage', selectedLanguage);
+        }
+    }, [selectedLanguage]);
+
     // Scroll to bottom when messages change
     useEffect(() => {
         messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -87,7 +96,6 @@ export default function ChatPage() {
     // Call LLM API
     async function callLLM(
         lang: string,
-        modelName: string,
         userPrompt: string,
         conversationHistory: ConversationMessage[] = []
     ): Promise<ConversationMessage[]> {
@@ -99,7 +107,7 @@ export default function ChatPage() {
                 },
                 body: JSON.stringify({
                     lang,
-                    modelName,
+                    modelName: LLM_MODEL_NAME,
                     userPrompt,
                     conversationHistory,
                 }),
@@ -145,7 +153,6 @@ export default function ChatPage() {
             // Call LLM with user input
             const newMessages = await callLLM(
                 selectedLanguage,
-                selectedModel,
                 inputText,
                 messages
             );
@@ -273,18 +280,6 @@ export default function ChatPage() {
                         {availableLanguages.map((lang) => (
                             <option key={lang} value={lang}>
                                 {lang}
-                            </option>
-                        ))}
-                    </select>
-                    <select
-                        value={selectedModel}
-                        onChange={(e) => setSelectedModel(e.target.value)}
-                        className="p-2 border rounded"
-                        disabled={isLoading}
-                    >
-                        {LLM_MODEL_NAME.map((model) => (
-                            <option key={model} value={model}>
-                                {model}
                             </option>
                         ))}
                     </select>
