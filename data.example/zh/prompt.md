@@ -18,7 +18,6 @@ Pinyin: shìqing;zhè shì yī jiàn xiǎo shìqing;wǒ yǒu hěn duō shìqing 
 EN: affair, matter;this is a small matter/thing;I have many things to do;this matter is very important
 HasHant:
 (HasHant has been left blank because the simplified and traditional forms of the word are identical)
-
 Fields:
 - Key: Primary key for the card. Use the dictionary form of the word/phrase. If there is a reported clash, search for it and choose to either update the existing card or  create a new card with a suffixed key.
 - ZH: (Semicolon-separated list)

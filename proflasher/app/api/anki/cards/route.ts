@@ -1,6 +1,16 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { Anki } from "~/lib/ankiConnect";
-import templates from "~/lib/cardModel/noteTemplates";
+import { loadTemplates, type Templates } from "~/lib/cardModel/noteTemplates";
+import { env } from "~/lib/env";
+
+// Cache templates in memory to avoid reading from disk on every request
+let templatesCache: Templates | null = null;
+async function getTemplates(): Promise<Templates> {
+    if (!templatesCache) {
+        templatesCache = await loadTemplates(env.DATA_REPO_PATH);
+    }
+    return templatesCache;
+}
 
 interface CardOperation {
     modelName: string;
@@ -21,20 +31,18 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Get deck name based on model
-        const deckName = {
-            "ZH<->EN": "Lang::ZH",
-            "DE<->EN": "Lang::DE",
-            "FR<->EN": "Lang::FR",
-            "JP<->EN": "Lang::JP",
-        }[modelName];
-
-        if (!deckName) {
+        // Get templates to find the language for the deck name
+        const templates = await loadTemplates();
+        const template = Object.values(templates).find(t => t.noteType === modelName);
+        if (!template) {
             return NextResponse.json(
-                { error: `Invalid model name: ${modelName}` },
+                { error: `Template not found for model ${modelName}` },
                 { status: 400 }
             );
         }
+
+        // Get deck name based on language
+        const deckName = `Lang::${template.language.toUpperCase()}`;
 
         let result: any;
         let cardIds: number[] = [];
@@ -67,12 +75,6 @@ export async function POST(request: NextRequest) {
                 }
                 throw error;
             }
-        }
-
-        // Get template to map card type names to indices
-        const template = Object.values(templates).find(t => t.noteType === modelName);
-        if (!template) {
-            throw new Error(`Template not found for model ${modelName}`);
         }
 
         // Get all cards for the note

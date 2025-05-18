@@ -1,0 +1,19 @@
+/* French flag */
+.flag-fr:after {
+    content: "FR";
+    color: #ed2939;
+    background-color: #002654;
+    text-shadow: #ffffff -1px -1px 0, #ffffff -1px 1px 0, #ffffff 1px -1px 0, #ffffff 1px 1px 0;
+}
+
+/* French text styles */
+.fr {
+    display: inline-block;
+    width: 2.5rem;
+    text-align: center;
+    white-space: nowrap;
+    box-sizing: border-box;
+    color: #ed2939;
+    background-color: #002654;
+    text-shadow: #ffffff -1px -1px 0, #ffffff -1px 1px 0, #ffffff 1px -1px 0, #ffffff 1px 1px 0;
+}

@@ -1,0 +1,31 @@
+noteType: DE<->EN
+language: de
+fieldDescriptions:
+  Key: Primary key for the card. Use the dictionary form of the word/phrase. If there is a reported clash, search for it and choose to either update the existing card or create a new card with a suffixed key.
+  DE: (Semicolon-separated list)
+  EN: (Semicolon-separated list)
+  Mnemonic: Leave blank for normal words that have English equivalents. Otherwise specify how their usage differs to English.
+  Related: Related words (if any). Include German and English, e.g. 'die Katze (the cat); das Meerschweinchen (the hamster)'
+
+requiredFields: [Key, DE, EN]
+
+fieldGroups:
+  - [DE, EN]
+
+fieldLangs:
+  DE: de
+  EN: en
+
+cardDescriptions:
+  DE->EN: German to English
+  EN->DE: English to German
+
+cards:
+  DE->EN:
+    rows:
+      - { flag: "flag-de", field: "DE", attrs: 'lang="de" class="prompt speaknow"' }
+      - { flag: "flag-en", field: "EN", attrs: 'lang="en" class="response"' }
+  EN->DE:
+    rows:
+      - { flag: "flag-en", field: "EN", attrs: 'lang="en" class="prompt"' }
+      - { flag: "flag-de", field: "DE", attrs: 'lang="de" class="response speaknow"' }

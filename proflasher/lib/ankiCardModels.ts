@@ -2,16 +2,13 @@ import * as fsPromises from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { Anki } from "./ankiConnect";
-import templates from "./cardModel/noteTemplates";
+import { loadTemplates, type CardModel, type Templates } from "./cardModel/noteTemplates";
+import { env } from "./env";
 
 // Create __dirname equivalent for ESM
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-type CardModel = {
-    Back: string;
-    Front: string;
-};
 interface NoteModel {
     cards: Record<string, CardModel>;
     styling: string;
@@ -46,6 +43,7 @@ export const updateCardModels = async (language?: string): Promise<string[]> => 
     };
 
     const ankiTemplates = await getAnkiNotes();
+    const templates = await loadTemplates();
 
     const jsCode = await fsPromises.readFile(
         path.join(__dirname, "../lib/cardModel/card.js"),
@@ -60,12 +58,24 @@ export const updateCardModels = async (language?: string): Promise<string[]> => 
         ? Object.entries(templates).filter(([_, template]) => template.noteType.startsWith(language.toUpperCase()))
         : Object.entries(templates);
 
-    for (const [_, template] of templatesToUpdate) {
+    for (const [lang, template] of templatesToUpdate) {
         const modelName = template.noteType;
         const ankiNote = ankiTemplates[modelName];
 
         if (ankiNote) {
-            const localStyling = fixString(cssCode);
+            // Read language-specific CSS if it exists
+            let customCss = "";
+            try {
+                customCss = await fsPromises.readFile(path.join(env.DATA_REPO_PATH, lang, "style.css"), "utf-8");
+                log(`Loaded custom CSS for ${lang}`);
+            } catch (error) {
+                log(`No custom CSS found for ${lang}`);
+            }
+
+            // Combine base CSS with language-specific CSS
+            const combinedCss = `${cssCode}\n\n/* Language-specific styles for ${lang} */\n${customCss}`;
+            const localStyling = fixString(combinedCss);
+
             if (localStyling !== fixString(ankiNote.styling)) {
                 log(`Updating ${modelName} styling`);
                 await Anki.updateModelStyling(modelName, localStyling);

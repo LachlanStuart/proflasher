@@ -1,0 +1,19 @@
+/* German flag */
+.flag-de:after {
+    content: "DE";
+    color: #ffcc00;
+    background-color: #dd0000;
+    text-shadow: #000000 -1px -1px 0, #000000 -1px 1px 0, #000000 1px -1px 0, #000000 1px 1px 0;
+}
+
+/* German text styles */
+.de {
+    display: inline-block;
+    width: 2.5rem;
+    text-align: center;
+    white-space: nowrap;
+    box-sizing: border-box;
+    color: #ffcc00;
+    background-color: #dd0000;
+    text-shadow: #000000 -1px -1px 0, #000000 -1px 1px 0, #000000 1px -1px 0, #000000 1px 1px 0;
+}

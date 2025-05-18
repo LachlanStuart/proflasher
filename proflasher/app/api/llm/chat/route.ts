@@ -4,7 +4,16 @@ import { type NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { env } from "~/lib/env";
 import { Anki } from "~/lib/ankiConnect";
-import templates, { validateNote } from "~/lib/cardModel/noteTemplates";
+import { validateNote, loadTemplates, type Templates } from "~/lib/cardModel/noteTemplates";
+
+// Cache templates in memory to avoid reading from disk on every request
+let templatesCache: Templates | null = null;
+async function getTemplates(): Promise<Templates> {
+    if (!templatesCache) {
+        templatesCache = await loadTemplates(env.DATA_REPO_PATH);
+    }
+    return templatesCache;
+}
 
 interface UserMessage {
     type: "user";
@@ -143,27 +152,30 @@ async function searchAnki(query: string): Promise<AnkiSearchMessage> {
 }
 
 // Propose cards to create or update with validation
-function proposeCards(
+async function proposeCards(
     cards: Array<Record<string, string>>,
     lang: string,
-): CardProposalMessage {
+): Promise<CardProposalMessage> {
+    const templates = await getTemplates();
     const template = templates[lang];
     if (!template) throw new Error(`Template for language ${lang} not found`);
 
     // Validate cards
-    const invalidCards = cards.flatMap((card, index) => {
-        const { isValid, error } = validateNote(lang, card);
+    const invalidCards = await Promise.all(cards.map(async (card, index) => {
+        const { isValid, error } = await validateNote(template.noteType, card, templates);
         return isValid ? [] : [`Card #${index + 1} has invalid fields: ${error}`];
-    });
+    }));
 
-    if (invalidCards.length > 0) {
-        console.error("Invalid cards detected:", invalidCards);
+    const allInvalidCards = invalidCards.flat();
+    if (allInvalidCards.length > 0) {
+        console.error("Invalid cards detected:", allInvalidCards);
         return {
             type: "card_proposal",
             cards,
-            error: `Invalid cards detected:\n${invalidCards.join("\n")}`,
+            error: `Invalid cards detected:\n${allInvalidCards.join("\n")}`,
         };
     }
+
     // Fill null fields with empty strings
     for (const card of cards) {
         for (const field of Object.keys(template.fieldDescriptions)) {
@@ -181,6 +193,7 @@ function proposeCards(
 
 // Build system instructions
 async function buildSystemInstructions(lang: string): Promise<string> {
+    const templates = await getTemplates();
     const template = templates[lang];
     if (!template) throw new Error(`Template for language ${lang} not found`);
 
@@ -344,7 +357,7 @@ async function callLLMWithRetry(
                         newHistory.push(searchResults);
                         isDone = false;
                     } else if (functionName === "proposeCards") {
-                        const cardProposal = proposeCards(args.cards, lang);
+                        const cardProposal = await proposeCards(args.cards, lang);
                         newHistory.push(cardProposal);
                         if (cardProposal.error) {
                             isDone = false;

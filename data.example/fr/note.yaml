@@ -1,0 +1,36 @@
+noteType: FR<->EN
+language: fr
+fieldDescriptions:
+  Key: Primary key for the card. Use the dictionary form of the word/phrase. If there is a reported clash, search for it and choose to either update the existing card or create a new card with a suffixed key.
+  FR: (Semicolon-separated list)
+  EN: (Semicolon-separated list aligned to FR)
+  Mnemonic: Leave blank for normal words that have English equivalents. Otherwise specify how their usage differs to English.
+  Related: Related words (if any). Include French and English, e.g. 'le chat (the cat); le chaton (the kitten)'
+  ExtraFR: (Semicolon-separated list)
+  ExtraEN: (Semicolon-separated list aligned to ExtraFR)
+
+requiredFields: [Key, FR, EN]
+
+fieldGroups:
+  - [ExtraFR, ExtraEN]
+  - [FR, EN]
+
+fieldLangs:
+  FR: fr
+  EN: en
+  ExtraFR: fr
+  ExtraEN: en
+
+cardDescriptions:
+  FR->EN: French to English
+  EN->FR: English to French
+
+cards:
+  FR->EN:
+    rows:
+      - { flag: "flag-fr", field: "FR", attrs: 'lang="fr" class="prompt speaknow"' }
+      - { flag: "flag-en", field: "EN", attrs: 'lang="en" class="response"' }
+  EN->FR:
+    rows:
+      - { flag: "flag-en", field: "EN", attrs: 'lang="en" class="prompt"' }
+      - { flag: "flag-fr", field: "FR", attrs: 'lang="fr" class="response speaknow"' }

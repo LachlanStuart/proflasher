@@ -1,0 +1,37 @@
+.flag-de:after {
+    content: "DE";
+}
+
+.flag-fr:after {
+    content: "FR";
+}
+
+.flag-zh:after {
+    content: "中文";
+}
+
+.flag-py:after {
+    content: "ZH";
+}
+
+.flag-jp:after {
+    content: "日本語";
+}
+
+.flag-kana:after {
+    content: "仮名";
+}
+
+.flag-en:after {
+    content: "EN";
+}
+
+/* Common flag styles */
+[class^="flag-"]:after {
+    display: inline-block;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-right: 0.5rem;
+}
