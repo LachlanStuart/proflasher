@@ -18,7 +18,7 @@
     "linter": {
         "enabled": true,
         "ignore": [
-            "src/lib/cardModel/card.js"
+            "lib/cardModel/card.js"
         ],
         "rules": {
             "a11y": {

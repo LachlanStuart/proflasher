@@ -11,7 +11,7 @@ The project is a Next.js web application that:
 1. Generates flashcards by providing tools to Google Gemini models (via OpenAI API) and asking them to generate drafts of cards
 2. Allows customizing the cards before they're saved to Anki
 3. Allows asking Gemini to do bulk queries and rewriting cards
-4. Supports multiple languages, each with its own field structure and card styles, defined in [noteTemplates.ts](mdc:proflasher/web_ui/src/lib/cardModel/noteTemplates.ts)
+4. Supports multiple languages, each with its own field structure and card styles, defined in [noteTemplates.ts](mdc:proflasher/web_ui/lib/cardModel/noteTemplates.ts)
 
 ## Key Design Principles
 - Minimalist code with direct function calls rather than services/classes

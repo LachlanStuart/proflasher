@@ -17,7 +17,7 @@ Key environment variables:
 
 ## Environment Access Pattern
 
-- Environment values are accessed via the `env` object from [env.ts](mdc:proflasher/src/env.ts)
+- Environment values are accessed via the `env` object from [env.ts](mdc:proflasher/env.ts)
 - Example usage: `import { env } from "~/env";` then `env.DATA_REPO_PATH`
 - Type assertion is used for all environment variables
 - No default values are provided to ensure required variables are always provided

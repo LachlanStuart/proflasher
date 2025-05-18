@@ -6,17 +6,17 @@ alwaysApply: true
 
 ## Directory Structure
 
-- [proflasher/src/app](mdc:proflasher/src/app): Next.js app router pages and API routes
-  - Key file: [page.tsx](mdc:proflasher/src/app/chat/page.tsx): The main chat interface
-  - Key file: [route.ts](mdc:proflasher/src/app/api/llm/chat/route.ts): The web API for chat, which includes LLM calls
-  - Key file: [route.ts](mdc:proflasher/src/app/api/anki/route.ts): The web API for Anki
-- [proflasher/src/components](mdc:proflasher/src/components): React components used across the application
-  - Key file: [CardProposalMessage.tsx](mdc:proflasher/src/components/chat/CardProposalMessage.tsx): Chat component for proposed cards
-- [proflasher/src/lib](mdc:proflasher/src/lib): Core functionality and utilities
-  - Key file: [ankiConnect.ts](mdc:proflasher/src/lib/ankiConnect.ts): server-side library for calling Anki via AnkiConnect
-  - Key file: [noteTemplates.ts](mdc:proflasher/src/lib/cardModel/noteTemplates.ts): Flashcard template definitions for different languages
+- [proflasher/app](mdc:proflasher/app): Next.js app router pages and API routes
+  - Key file: [page.tsx](mdc:proflasher/app/chat/page.tsx): The main chat interface
+  - Key file: [route.ts](mdc:proflasher/app/api/llm/chat/route.ts): The web API for chat, which includes LLM calls
+  - Key file: [route.ts](mdc:proflasher/app/api/anki/route.ts): The web API for Anki
+- [proflasher/components](mdc:proflasher/components): React components used across the application
+  - Key file: [CardProposalMessage.tsx](mdc:proflasher/components/chat/CardProposalMessage.tsx): Chat component for proposed cards
+- [proflasher/lib](mdc:proflasher/lib): Core functionality and utilities
+  - Key file: [ankiConnect.ts](mdc:proflasher/lib/ankiConnect.ts): server-side library for calling Anki via AnkiConnect
+  - Key file: [noteTemplates.ts](mdc:proflasher/lib/cardModel/noteTemplates.ts): Flashcard template definitions for different languages
   -
-- [proflasher/src/styles](mdc:proflasher/src/styles): CSS and styling files
-- [proflasher/src/scripts](mdc:proflasher/src/scripts): Utility scripts for the project
+- [proflasher/styles](mdc:proflasher/styles): CSS and styling files
+- [proflasher/scripts](mdc:proflasher/scripts): Utility scripts for the project
 - [data](mdc:data): Storage for flashcard data (gitignored in actual repo)
 
