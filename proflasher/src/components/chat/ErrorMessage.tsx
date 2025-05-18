@@ -1,16 +1,16 @@
-import { ErrorMessage as ErrorMessageType } from "~/app/chat/page";
+import type { ErrorMessage as ErrorMessageType } from "~/app/chat/page";
 
 interface ErrorMessageProps {
-    message: ErrorMessageType;
+	message: ErrorMessageType;
 }
 
 export function ErrorMessage({ message }: ErrorMessageProps) {
-    return (
-        <div className="flex mb-4">
-            <div className="bg-red-100 text-red-700 px-4 py-2 rounded-lg max-w-[80%] border-l-4 border-red-500">
-                <div className="font-bold mb-1">⚠️ Error</div>
-                {message.content}
-            </div>
-        </div>
-    );
+	return (
+		<div className="mb-4 flex">
+			<div className="max-w-[80%] rounded-lg border-red-500 border-l-4 bg-red-100 px-4 py-2 text-red-700">
+				<div className="mb-1 font-bold">⚠️ Error</div>
+				{message.content}
+			</div>
+		</div>
+	);
 }

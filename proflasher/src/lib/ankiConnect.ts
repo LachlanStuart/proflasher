@@ -1,12 +1,12 @@
 // Docs: https://github.com/FooSoft/anki-connect
 
-import { Mutex } from 'async-mutex';
+import { Mutex } from "async-mutex";
 
 const mutex = new Mutex();
 const callAnkiConnect = async (action: string, params = {}) => {
     console.log("Calling AnkiConnect", action, params);
     try {
-        let response;
+        let response: any;
         const release = await mutex.acquire();
         try {
             response = await fetch("http://127.0.0.1:8765", {
@@ -15,27 +15,30 @@ const callAnkiConnect = async (action: string, params = {}) => {
                 body: JSON.stringify({ action, version: 6, params }),
             });
             if (response.status !== 200) {
-                throw new Error(`AnkiConnect unexpected status: ${response.status} ${response.statusText}`)
+                throw new Error(
+                    `AnkiConnect unexpected status: ${response.status} ${response.statusText}`,
+                );
             }
         } finally {
             release();
         }
 
-        const result = await response.json()
-        if (Object.getOwnPropertyNames(result).length != 2
-            || !result.hasOwnProperty('error')
-            || !result.hasOwnProperty('result')) {
-            throw new Error(`AnkiConnect malformed response: "${result}"`)
+        const result = await response.json();
+        if (
+            Object.getOwnPropertyNames(result).length !== 2 ||
+            !Object.hasOwn(result, "error") ||
+            !Object.hasOwn(result, "result")
+        ) {
+            throw new Error(`AnkiConnect malformed response: "${result}"`);
         }
         if (result.error) {
-            throw new Error(`AnkiConnect error: ${result.error}`)
+            throw new Error(`AnkiConnect error: ${result.error}`);
         }
-        return result.result
+        return result.result;
     } catch (err) {
         console.error("Error calling AnkiConnect", action, params, err);
         throw err;
     }
-
 };
 
 export type ModelTemplate = {
