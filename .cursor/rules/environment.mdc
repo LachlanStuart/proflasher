@@ -1,0 +1,31 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Environment Configuration
+
+The project uses a simple environment configuration approach for accessing configuration values.
+
+## Environment Variables
+
+Key environment variables:
+- `DATA_REPO_PATH`: Path to the data repository containing language-specific data
+- `LLM_API_KEY`: API key for Google Gemini (via OpenAI-compatible API)
+- `LLM_API_BASE_URL`: Base URL for the OpenAI-compatible API
+- `ANKICONNECT_URL`: URL for connecting to the AnkiConnect add-on
+
+## Environment Access Pattern
+
+- Environment values are accessed via the `env` object from [env.ts](mdc:proflasher/src/env.ts)
+- Example usage: `import { env } from "~/env";` then `env.DATA_REPO_PATH`
+- Type assertion is used for all environment variables
+- No default values are provided to ensure required variables are always provided
+
+## Configuration Philosophy
+
+Following the project's design principles:
+- Simplicity over configurability
+- Direct access to values rather than through services
+- Minimal error handling
+- No complex configuration objects

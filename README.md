@@ -36,7 +36,7 @@ cp proflasher/.env.example proflasher/.env
 cp -R data.example data
 ```
 
-You need to add a value for `OPENAI_API_KEY` to `proflasher/.env` to access Google Gemini. To get the key:
+You need to add a value for `LLM_API_KEY` to `proflasher/.env` to access Google Gemini. To get the key:
 1. Go to [AI Studio](https://aistudio.google.com)
 2. In the top right, click "Get API Key"
 3. Click "+ Create API Key"

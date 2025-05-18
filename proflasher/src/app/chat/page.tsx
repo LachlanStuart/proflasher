@@ -9,7 +9,7 @@ import { ErrorMessage } from "~/components/chat/ErrorMessage";
 import templates from "~/lib/cardModel/noteTemplates";
 
 // LLM model names
-const LLM_MODEL_NAMES = [
+const LLM_MODEL_NAME = [
     "gemini-2.5-flash-preview-04-17",
     "gemini-2.5-pro-exp-03-25",
 ];
@@ -55,7 +55,7 @@ export default function ChatPage() {
     const [inputText, setInputText] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [selectedLanguage, setSelectedLanguage] = useState("zh");
-    const [selectedModel, setSelectedModel] = useState<string>(LLM_MODEL_NAMES[0]);
+    const [selectedModel, setSelectedModel] = useState<string>(LLM_MODEL_NAME[0]);
     const [availableLanguages, setAvailableLanguages] = useState<string[]>([]);
     const [isAddingAllCards, setIsAddingAllCards] = useState(false);
     const messageEndRef = useRef<HTMLDivElement>(null);
@@ -282,7 +282,7 @@ export default function ChatPage() {
                         className="p-2 border rounded"
                         disabled={isLoading}
                     >
-                        {LLM_MODEL_NAMES.map((model) => (
+                        {LLM_MODEL_NAME.map((model) => (
                             <option key={model} value={model}>
                                 {model}
                             </option>

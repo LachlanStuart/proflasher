@@ -3,7 +3,9 @@ import path from "node:path";
 import { type NextRequest, NextResponse } from "next/server";
 import { env } from "~/env";
 
-
+const allowedConfigFiles = [
+    "prompt.md",
+];
 interface Params {
     lang: string;
     configFile: string;
@@ -18,10 +20,6 @@ export async function GET(
     const { lang, configFile } = await Promise.resolve(params);
 
     // Basic validation for allowed config file names to prevent arbitrary file access
-    const allowedConfigFiles = [
-        "prompt.md",
-        "related_words.txt",
-    ];
     if (!allowedConfigFiles.includes(configFile)) {
         return NextResponse.json(
             { error: "Invalid config file requested" },
@@ -47,10 +45,6 @@ export async function POST(
     // Use await here to ensure params are fully resolved
     const { lang, configFile } = await Promise.resolve(params);
 
-    const allowedConfigFiles = [
-        "prompt.md",
-        "related_words.txt",
-    ];
     if (!allowedConfigFiles.includes(configFile)) {
         return NextResponse.json(
             { error: "Invalid config file requested" },

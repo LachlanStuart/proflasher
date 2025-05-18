@@ -281,8 +281,8 @@ async function callLLMWithRetry(
     let retryCount = 0;
     const newHistory: ConversationMessage[] = conversationHistory.slice();
     const openai = new OpenAI({
-        apiKey: env.OPENAI_API_KEY,
-        baseURL: env.OPENAI_API_BASE_URL
+        apiKey: env.LLM_API_KEY,
+        baseURL: env.LLM_API_BASE_URL
     });
     while (true) {
         let completion: OpenAI.Chat.Completions.ChatCompletion;

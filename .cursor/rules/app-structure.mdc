@@ -1,0 +1,33 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Next.js App Structure
+
+The project uses Next.js App Router for page routing and layout management.
+
+## Key Pages
+
+- [app/page.tsx](mdc:proflasher/src/app/page.tsx): Home page
+- [app/chat/page.tsx](mdc:proflasher/src/app/chat/page.tsx): Main flashcard generation interface
+- [app/settings/](mdc:proflasher/src/app/settings/): Application settings
+
+## API Routes
+
+- [app/api/llm/](mdc:proflasher/src/app/api/llm/): AI model interaction endpoints
+- [app/api/anki/](mdc:proflasher/src/app/api/anki/): Anki operations and management
+
+## Layout Structure
+
+- [app/layout.tsx](mdc:proflasher/src/app/layout.tsx): Root layout with header and global styling
+- Uses the Inter font from Google Fonts
+- Includes a header component from [components/Header.tsx](mdc:proflasher/src/components/Header.tsx)
+
+## Routing Pattern
+
+The application follows Next.js App Router conventions:
+- Each page is defined by a `page.tsx` file
+- Route parameters are defined with `[param]` folders
+- API routes are defined in `route.ts` files
+- Shared layouts are defined in `layout.tsx` files
