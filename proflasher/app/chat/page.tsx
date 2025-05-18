@@ -152,17 +152,19 @@ export default function ChatPage() {
     const handleAddToAnki = async (
         card: Record<string, string>,
         modelName: string,
+        activeCardTypes: string[],
     ) => {
         try {
             // Add note to Anki via server API
-            const response = await fetch("/api/anki", {
+            const response = await fetch("/api/anki/cards", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
-                    action: "addNote",
-                    params: { fields: card, modelName },
+                    modelName,
+                    fields: card,
+                    activeCardTypes,
                 }),
             });
 
@@ -171,7 +173,7 @@ export default function ChatPage() {
                 throw new Error(errorData.error || "Failed to add card to Anki");
             }
 
-            const noteId = await response.json();
+            const { noteId, cardIds } = await response.json();
 
             if (noteId) {
                 // Success message
