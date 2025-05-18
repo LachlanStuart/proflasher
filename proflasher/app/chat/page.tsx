@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { useRef, useState } from "react";
 import { AnkiSearchMessage } from "~/components/chat/AnkiSearchMessage";
 import { CardProposalMessage } from "~/components/chat/CardProposalMessage";
@@ -9,6 +10,14 @@ import { UserMessage } from "~/components/chat/UserMessage";
 
 // LLM model name
 const LLM_MODEL_NAME = "gemini-2.5-flash-preview-04-17";
+
+interface DuplicateCardData {
+    type: "duplicate_card";
+    noteId: number;
+    fields: Record<string, string>;
+    modelName: string;
+    activeCardTypes: string[];
+}
 
 // Message types for conversation history
 interface UserMessage {
@@ -44,7 +53,41 @@ type ConversationMessage =
     | LLMMessage
     | ErrorMessage
     | AnkiSearchMessage
-    | CardProposalMessage;
+    | CardProposalMessage
+    | DuplicateCardData;
+
+// Component for duplicate card message
+function DuplicateCardMessage({
+    data,
+    onShowInAnki,
+    onUpdate,
+}: {
+    data: DuplicateCardData;
+    onShowInAnki: (noteId: number) => void;
+    onUpdate: (modelName: string, fields: Record<string, string>, activeCardTypes: string[], noteId: number) => void;
+}) {
+    return (
+        <div className="my-2 rounded border border-yellow-500 bg-yellow-50 p-4">
+            <div className="flex flex-col gap-2">
+                <div>Card already exists</div>
+                <div className="flex gap-2">
+                    <button
+                        onClick={() => onShowInAnki(data.noteId)}
+                        className="rounded bg-blue-500 px-3 py-1 text-white hover:bg-blue-600"
+                    >
+                        Show in Anki
+                    </button>
+                    <button
+                        onClick={() => onUpdate(data.modelName, data.fields, data.activeCardTypes, data.noteId)}
+                        className="rounded bg-green-500 px-3 py-1 text-white hover:bg-green-600"
+                    >
+                        Update
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
 
 export default function ChatPage() {
     const [messages, setMessages] = useState<ConversationMessage[]>([]);
@@ -148,6 +191,64 @@ export default function ChatPage() {
         setMessages([]);
     };
 
+    // Handle showing note in Anki
+    const handleShowInAnki = async (noteId: number) => {
+        try {
+            await fetch("/api/anki", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    action: "guiSelectCard",
+                    params: { card: noteId },
+                }),
+            });
+        } catch (error) {
+            console.error("Error showing note in Anki:", error);
+        }
+    };
+
+    // Handle updating existing note
+    const handleUpdateNote = async (
+        modelName: string,
+        fields: Record<string, string>,
+        activeCardTypes: string[],
+        noteId: number
+    ) => {
+        try {
+            await fetch("/api/anki/cards", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    modelName,
+                    fields,
+                    activeCardTypes,
+                    update: true,
+                    noteId,
+                }),
+            });
+            setMessages((prev) => [
+                ...prev,
+                {
+                    type: "llm",
+                    content: `Card updated successfully! Note ID: ${noteId}, Key: ${fields.Key}`,
+                },
+            ]);
+        } catch (error) {
+            console.error("Error updating note:", error);
+            setMessages((prev) => [
+                ...prev,
+                {
+                    type: "error",
+                    content: `Failed to update card: ${error instanceof Error ? error.message : String(error)}`,
+                },
+            ]);
+        }
+    };
+
     // Handle adding card to Anki
     const handleAddToAnki = async (
         card: Record<string, string>,
@@ -168,12 +269,28 @@ export default function ChatPage() {
                 }),
             });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || "Failed to add card to Anki");
+            const data = await response.json();
+
+            if (response.status === 409) {
+                // Handle duplicate card by storing only the data
+                setMessages((prev) => [
+                    ...prev,
+                    {
+                        type: "duplicate_card",
+                        noteId: data.noteId,
+                        fields: data.fields,
+                        modelName,
+                        activeCardTypes,
+                    },
+                ]);
+                return;
             }
 
-            const { noteId, cardIds } = await response.json();
+            if (!response.ok) {
+                throw new Error(data.error || "Failed to add card to Anki");
+            }
+
+            const { noteId } = data;
 
             if (noteId) {
                 // Success message
@@ -181,7 +298,7 @@ export default function ChatPage() {
                     ...prev,
                     {
                         type: "llm",
-                        content: `Card added successfully to Anki! Note ID: ${noteId}`,
+                        content: `Card added successfully to Anki! Note ID: ${noteId}, Key: ${card.Key}`,
                     },
                 ]);
 
@@ -230,6 +347,15 @@ export default function ChatPage() {
                                         message={message}
                                         language={getSelectedLanguage()}
                                         onAddToAnki={handleAddToAnki}
+                                    />
+                                );
+                            case "duplicate_card":
+                                return (
+                                    <DuplicateCardMessage
+                                        key={index}
+                                        data={message}
+                                        onShowInAnki={handleShowInAnki}
+                                        onUpdate={handleUpdateNote}
                                     />
                                 );
                             default:

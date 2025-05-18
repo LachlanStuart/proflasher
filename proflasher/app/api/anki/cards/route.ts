@@ -46,11 +46,27 @@ export async function POST(request: NextRequest) {
             const cards = await Anki.findCards(`nid:${noteId}`);
             cardIds = cards;
         } else {
-            // Add new note
-            result = await Anki.addNote({ deckName, modelName, fields });
-            // Get card IDs for the new note
-            const cards = await Anki.findCards(`nid:${result}`);
-            cardIds = cards;
+            try {
+                // Add new note
+                result = await Anki.addNote({ deckName, modelName, fields });
+                // Get card IDs for the new note
+                const cards = await Anki.findCards(`nid:${result}`);
+                cardIds = cards;
+            } catch (error) {
+                // Check if it's a duplicate error
+                if (error instanceof Error && error.message.includes("duplicate")) {
+                    // Search for the existing note using the Key field
+                    const existingNotes = await Anki.findNotes(`"Key:${fields.Key}" note:${modelName}`);
+                    if (existingNotes.length > 0) {
+                        return NextResponse.json({
+                            error: "duplicate",
+                            noteId: existingNotes[0],
+                            fields
+                        }, { status: 409 }); // 409 Conflict
+                    }
+                }
+                throw error;
+            }
         }
 
         // Get template to map card type names to indices
@@ -64,29 +80,47 @@ export async function POST(request: NextRequest) {
 
         // Get the actual card templates from Anki to determine the correct order
         const ankiTemplates = await Anki.modelTemplates(modelName);
-        console.log("Anki templates:", ankiTemplates);
         const cardTypeToOrd = new Map(
             Object.keys(ankiTemplates).map((name, ord) => [name, ord])
         );
         console.log("Card type to ord mapping:", Object.fromEntries(cardTypeToOrd));
 
-        // Suspend cards that aren't in activeCardTypes
+        // Handle card suspension based on activeCardTypes
         if (activeCardTypes) {
             console.log("Active card types:", activeCardTypes);
-            const cardsToSuspend = cardsInfo.filter(card => {
-                // Find the card type name that matches this card's ord
-                const cardTypeName = Array.from(cardTypeToOrd.entries()).find(
-                    ([_, ord]) => ord === card.ord
-                )?.[0];
-                console.log(`Card ${card.cardId}: type=${card.type}, ord=${card.ord}, name=${cardTypeName}`);
-                return !cardTypeName || !activeCardTypes.includes(cardTypeName);
-            });
 
+            // Separate cards into those to suspend and unsuspend
+            const [cardsToSuspend, cardsToUnsuspend] = cardsInfo.reduce<[number[], number[]]>(
+                ([suspend, unsuspend], card) => {
+                    // Find the card type name that matches this card's ord
+                    const cardTypeName = Array.from(cardTypeToOrd.entries()).find(
+                        ([_, ord]) => ord === card.ord
+                    )?.[0];
+                    console.log(`Card ${card.cardId}: type=${card.type}, ord=${card.ord}, name=${cardTypeName}`);
+
+                    if (!cardTypeName) {
+                        return [suspend, unsuspend];
+                    }
+
+                    if (activeCardTypes.includes(cardTypeName)) {
+                        return [suspend, [...unsuspend, card.cardId]];
+                    } else {
+                        return [[...suspend, card.cardId], unsuspend];
+                    }
+                },
+                [[], []]
+            );
+
+            // Suspend cards not in activeCardTypes
             if (cardsToSuspend.length > 0) {
-                console.log("Suspending cards:", cardsToSuspend.map(card => card.cardId));
-                await Anki.suspend(cardsToSuspend.map(card => card.cardId));
-            } else {
-                console.log("No cards to suspend");
+                console.log("Suspending cards:", cardsToSuspend);
+                await Anki.suspend(cardsToSuspend);
+            }
+
+            // Unsuspend cards in activeCardTypes
+            if (cardsToUnsuspend.length > 0) {
+                console.log("Unsuspending cards:", cardsToUnsuspend);
+                await Anki.unsuspend(cardsToUnsuspend);
             }
         }
 

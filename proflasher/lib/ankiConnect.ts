@@ -165,6 +165,8 @@ export const Anki = {
         fields: Record<string, string>,
     ): Promise<null> =>
         callAnkiConnect("updateNoteFields", { note: { id, fields } }),
+    guiSelectCard: (cardId: number): Promise<boolean> =>
+        callAnkiConnect("guiSelectCard", { card: cardId }),
     addTags: (notes: number[], tags: string): Promise<null> =>
         callAnkiConnect("addTags", { notes, tags }),
     removeTags: (notes: number[], tags: string): Promise<null> =>
