@@ -1,6 +1,7 @@
 # Proflasher: AI-Powered Language Learning Flashcard Generator
 
-![](docs/logo.png)
+![Logo: a cartoon lizard holding open its trenchcoat, revealing cards of various languages](docs/logo.png)
+
 ## Project Overview
 
 Proflasher aims to create language-specific Anki flashcards augmented with rich, AI-generated, level-appropriate information.
