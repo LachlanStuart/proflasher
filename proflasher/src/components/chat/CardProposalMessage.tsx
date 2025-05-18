@@ -1,6 +1,12 @@
 import { useState, useRef, useEffect } from "react";
-import { CardProposalMessage as CardProposalMessageType } from "~/app/chat/page";
 import templates from "~/lib/cardModel/noteTemplates";
+
+// Define the CardProposalMessageType locally to fix import error
+interface CardProposalMessageType {
+    type: "card_proposal";
+    cards: Array<Record<string, string>>;
+    error?: string;
+}
 
 interface CardProposalMessageProps {
     message: CardProposalMessageType;
@@ -10,10 +16,11 @@ interface CardProposalMessageProps {
 
 export function CardProposalMessage({ message, language, onAddToAnki }: CardProposalMessageProps) {
     const [editedCards, setEditedCards] = useState<Record<string, string>[]>(
-        message.cards.map(card => ({ ...card }))
+        message.cards.map((card: Record<string, string>) => ({ ...card }))
     );
     const [selectedCard, setSelectedCard] = useState(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isAddingAll, setIsAddingAll] = useState(false);
     const textareaRefs = useRef<{ [field: string]: HTMLTextAreaElement | null }>({});
 
     // Auto-resize textareas on content change
@@ -57,13 +64,49 @@ export function CardProposalMessage({ message, language, onAddToAnki }: CardProp
         });
     }, [selectedCard]);
 
+    // Handle previous/next card navigation
+    const goToPreviousCard = () => {
+        if (selectedCard > 0) {
+            setSelectedCard(selectedCard - 1);
+        }
+    };
+
+    const goToNextCard = () => {
+        if (selectedCard < editedCards.length - 1) {
+            setSelectedCard(selectedCard + 1);
+        }
+    };
+
     // Handle card submission
     const handleSubmit = async () => {
         setIsSubmitting(true);
         try {
+            const template = templates[language];
+            if (!template) {
+                throw new Error(`Template not found for language ${language}`);
+            }
             await onAddToAnki(editedCards[selectedCard]!, template.noteType);
         } finally {
             setIsSubmitting(false);
+        }
+    };
+
+    // Handle adding all cards from this proposal
+    const handleAddAllCards = async () => {
+        if (isAddingAll) return;
+
+        setIsAddingAll(true);
+        try {
+            const template = templates[language];
+            if (!template) {
+                throw new Error(`Template not found for language ${language}`);
+            }
+            // Add each card from this proposal one by one
+            for (const card of editedCards) {
+                await onAddToAnki(card, template.noteType);
+            }
+        } finally {
+            setIsAddingAll(false);
         }
     };
 
@@ -79,7 +122,7 @@ export function CardProposalMessage({ message, language, onAddToAnki }: CardProp
     }
 
     // Generate ordered fields based on template.fieldOrder if available
-    const orderedFields = Object.keys(template.fieldDescriptions).map(field => [field, currentCard[field] || ''])
+    const orderedFields = Object.keys(template.fieldDescriptions).map(field => [field, currentCard[field] || ''] as [string, string]);
 
     return (
         <div className="flex mb-4">
@@ -96,19 +139,39 @@ export function CardProposalMessage({ message, language, onAddToAnki }: CardProp
                     <>
                         {/* Card navigation if multiple cards */}
                         {editedCards.length > 1 && (
-                            <div className="flex mb-4 gap-1">
+                            <div className="flex mb-4 gap-1 items-center">
+                                <button
+                                    onClick={goToPreviousCard}
+                                    disabled={selectedCard === 0}
+                                    className="px-3 py-1 rounded bg-gray-200 text-gray-700 disabled:bg-gray-100 disabled:text-gray-400"
+                                >
+                                    &lt;
+                                </button>
                                 {editedCards.map((_, index) => (
                                     <button
                                         key={index}
                                         onClick={() => setSelectedCard(index)}
-                                        className={`px-3 py-1 rounded ${selectedCard === index
-                                            ? "bg-green-600 text-white"
-                                            : "bg-gray-200 text-gray-700"
-                                            }`}
+                                        className="px-3 py-1 rounded bg-green-600 text-white disabled:bg-gray-200 disabled:text-gray-700"
+                                        disabled={selectedCard === index}
                                     >
                                         {index + 1}
                                     </button>
                                 ))}
+                                <button
+                                    onClick={goToNextCard}
+                                    disabled={selectedCard === editedCards.length - 1}
+                                    className="px-3 py-1 rounded bg-gray-200 text-gray-700 disabled:bg-gray-100 disabled:text-gray-400"
+                                >
+                                    &gt;
+                                </button>
+                                <div className="flex-grow"></div>
+                                <button
+                                    onClick={handleAddAllCards}
+                                    disabled={isAddingAll || isSubmitting}
+                                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded disabled:bg-gray-400"
+                                >
+                                    {isAddingAll ? "Adding all..." : "Add all to anki"}
+                                </button>
                             </div>
                         )}
 
@@ -124,7 +187,7 @@ export function CardProposalMessage({ message, language, onAddToAnki }: CardProp
                                         )}
                                     </label>
                                     <textarea
-                                        ref={el => textareaRefs.current[field] = el}
+                                        ref={(el) => { textareaRefs.current[field] = el; }}
                                         value={value}
                                         onChange={(e) => handleFieldChange(field, e.target.value)}
                                         className="border border-gray-300 rounded p-1 overflow-hidden"
@@ -135,10 +198,10 @@ export function CardProposalMessage({ message, language, onAddToAnki }: CardProp
                             ))}
                         </div>
 
-                        <div className="flex justify-end">
+                        <div className="flex justify-end gap-2">
                             <button
                                 onClick={handleSubmit}
-                                disabled={isSubmitting}
+                                disabled={isSubmitting || isAddingAll}
                                 className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded disabled:bg-gray-400"
                             >
                                 {isSubmitting ? "Adding..." : "Add to Anki"}

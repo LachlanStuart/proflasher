@@ -59,7 +59,6 @@ export default function ChatPage() {
         return "fr";
     });
     const [availableLanguages, setAvailableLanguages] = useState<string[]>([]);
-    const [isAddingAllCards, setIsAddingAllCards] = useState(false);
     const messageEndRef = useRef<HTMLDivElement>(null);
 
     // Fetch available languages on mount
@@ -225,47 +224,6 @@ export default function ChatPage() {
         }
     };
 
-    // Handle adding all cards
-    const handleAddAllCards = async () => {
-        if (isAddingAllCards) return;
-
-        setIsAddingAllCards(true);
-        const templateName = templates[selectedLanguage]?.noteType!;
-
-        try {
-            // Find all card proposal messages
-            const cardProposals = messages.filter(
-                (msg): msg is CardProposalMessage => msg.type === "card_proposal"
-            );
-            // Add each card one by one
-            for (const proposal of cardProposals) {
-                for (const card of proposal.cards) {
-                    await handleAddToAnki(card, templateName);
-                }
-            }
-
-            // Final success message
-            setMessages((prev) => [
-                ...prev,
-                {
-                    type: "llm",
-                    content: "All cards have been added to Anki!",
-                },
-            ]);
-        } catch (error) {
-            console.error("Error adding all cards:", error);
-            setMessages((prev) => [
-                ...prev,
-                {
-                    type: "error",
-                    content: `Failed to add all cards: ${error instanceof Error ? error.message : String(error)}`,
-                },
-            ]);
-        } finally {
-            setIsAddingAllCards(false);
-        }
-    };
-
     return (
         <div className="flex flex-col h-screen p-4">
             <div className="mb-4">
@@ -283,13 +241,6 @@ export default function ChatPage() {
                             </option>
                         ))}
                     </select>
-                    <button
-                        onClick={handleAddAllCards}
-                        className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 disabled:bg-green-300"
-                        disabled={isLoading || isAddingAllCards}
-                    >
-                        {isAddingAllCards ? "Adding..." : "Add All Cards"}
-                    </button>
                 </div>
             </div>
 
