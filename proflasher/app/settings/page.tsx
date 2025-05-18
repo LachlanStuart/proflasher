@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useFlashcard } from "~/lib/context/FlashcardContext";
 
 export default function SettingsPage() {
     const [globalInstructions, setGlobalInstructions] = useState<string>("");
@@ -10,23 +11,10 @@ export default function SettingsPage() {
     const [saveMessage, setSaveMessage] = useState<string | null>(null);
     const [ankiLogs, setAnkiLogs] = useState<string[]>([]);
     const [isUpdatingAnki, setIsUpdatingAnki] = useState<boolean>(false);
-
-    // Get language from localStorage (it's managed in the Header component now)
-    const getSelectedLanguage = () => {
-        if (typeof window !== "undefined") {
-            return localStorage.getItem("selectedLanguage") || "fr";
-        }
-        return "fr";
-    };
+    const { language } = useFlashcard();
 
     // Fetch config files for the currently selected language
     const fetchConfigFiles = useCallback(async () => {
-        const language = getSelectedLanguage();
-        if (!language) {
-            setGlobalInstructions("");
-            return;
-        }
-
         setIsLoading(true);
         setError(null);
         setSaveMessage(null);
@@ -45,31 +33,15 @@ export default function SettingsPage() {
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [language]);
 
-    // Setup effect to listen for language changes in localStorage
+    // Setup effect to fetch config files when language changes
     useEffect(() => {
         fetchConfigFiles();
-
-        // Add event listener for storage changes
-        const handleStorageChange = (e: StorageEvent) => {
-            if (e.key === "selectedLanguage") {
-                fetchConfigFiles();
-            }
-        };
-
-        window.addEventListener("storage", handleStorageChange);
-        return () => window.removeEventListener("storage", handleStorageChange);
     }, [fetchConfigFiles]);
 
     // Handler for saving a config file
     const handleSaveFile = async (fileName: string, content: string) => {
-        const language = getSelectedLanguage();
-        if (!language) {
-            setError("No language selected.");
-            return;
-        }
-
         setIsSaving(true);
         setError(null);
         setSaveMessage(null);
@@ -125,80 +97,68 @@ export default function SettingsPage() {
         }
     };
 
-    const language = getSelectedLanguage();
-
     return (
         <div className="h-[calc(100vh-80px)] overflow-y-auto pb-4">
             {(isLoading || isSaving) && <p>Loading/Saving...</p>}
             {error && <p className="py-2 text-red-500">Error: {error}</p>}
             {saveMessage && <p className="py-2 text-green-500">{saveMessage}</p>}
 
-            {language && (
-                <>
-                    <div className="mb-6">
-                        <label
-                            htmlFor="global-instructions"
-                            className="block font-medium text-gray-700 text-sm"
-                        >
-                            Global LLM Instructions for {language.toUpperCase()}:
-                        </label>
-                        <textarea
-                            id="global-instructions"
-                            rows={10}
-                            className="mt-1 block w-full rounded-md border-gray-300 p-2 shadow-sm sm:text-sm"
-                            value={globalInstructions}
-                            onChange={(e) => setGlobalInstructions(e.target.value)}
-                            placeholder={`Enter global LLM instructions for ${language.toUpperCase()}...`}
-                            disabled={isSaving}
-                        />
-                        <div className="mt-2 flex items-center gap-4">
-                            <button
-                                onClick={() =>
-                                    handleSaveFile(
-                                        "prompt.md",
-                                        globalInstructions,
-                                    )
-                                }
-                                disabled={isSaving}
-                                className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
-                            >
-                                {isSaving ? "Saving..." : "Save Global Instructions"}
-                            </button>
-                            {saveMessage && <p className="text-green-500">{saveMessage}</p>}
-                        </div>
-                    </div>
+            <div className="mb-6">
+                <label
+                    htmlFor="global-instructions"
+                    className="block font-medium text-gray-700 text-sm"
+                >
+                    Global LLM Instructions for {language.toUpperCase()}:
+                </label>
+                <textarea
+                    id="global-instructions"
+                    rows={10}
+                    className="mt-1 block w-full rounded-md border-gray-300 p-2 shadow-sm sm:text-sm"
+                    value={globalInstructions}
+                    onChange={(e) => setGlobalInstructions(e.target.value)}
+                    placeholder={`Enter global LLM instructions for ${language.toUpperCase()}...`}
+                    disabled={isSaving}
+                />
+                <div className="mt-2">
+                    <button
+                        onClick={() => handleSaveFile("prompt.md", globalInstructions)}
+                        disabled={isSaving}
+                        className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+                    >
+                        {isSaving ? "Saving..." : "Save Instructions"}
+                    </button>
+                </div>
+            </div>
 
-                    <div className="mb-6">
-                        <h2 className="text-lg font-semibold mb-4">Anki</h2>
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-4">
-                                <button
-                                    onClick={() => handleUpdateAnkiModels(language)}
-                                    disabled={isUpdatingAnki}
-                                    className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
-                                >
-                                    {isUpdatingAnki ? "Updating..." : `Update card model for ${language.toUpperCase()}`}
-                                </button>
-                                <button
-                                    onClick={() => handleUpdateAnkiModels()}
-                                    disabled={isUpdatingAnki}
-                                    className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
-                                >
-                                    {isUpdatingAnki ? "Updating..." : "Update card models for all languages"}
-                                </button>
-                            </div>
-                            {ankiLogs.length > 0 && (
-                                <div className="mt-4 bg-gray-100 p-4 rounded-md">
-                                    <h3 className="font-medium mb-2">Update Log:</h3>
-                                    <pre className="text-sm whitespace-pre-wrap">
-                                        {ankiLogs.join("\n")}
-                                    </pre>
-                                </div>
-                            )}
-                        </div>
+            <div className="mb-6">
+                <h2 className="text-lg font-semibold mb-4">Anki</h2>
+                <div className="space-y-4">
+                    <div className="flex items-center gap-4">
+                        <button
+                            onClick={() => handleUpdateAnkiModels(language)}
+                            disabled={isUpdatingAnki}
+                            className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+                        >
+                            {isUpdatingAnki ? "Updating..." : `Update card model for ${language.toUpperCase()}`}
+                        </button>
+                        <button
+                            onClick={() => handleUpdateAnkiModels()}
+                            disabled={isUpdatingAnki}
+                            className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+                        >
+                            {isUpdatingAnki ? "Updating..." : "Update card models for all languages"}
+                        </button>
                     </div>
-                </>
-            )}
+                    {ankiLogs.length > 0 && (
+                        <div className="mt-4 bg-gray-100 p-4 rounded-md">
+                            <h3 className="font-medium mb-2">Update Log:</h3>
+                            <pre className="text-sm whitespace-pre-wrap">
+                                {ankiLogs.join("\n")}
+                            </pre>
+                        </div>
+                    )}
+                </div>
+            </div>
         </div>
     );
 }

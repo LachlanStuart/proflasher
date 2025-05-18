@@ -7,6 +7,7 @@ import { CardProposalMessage } from "~/components/chat/CardProposalMessage";
 import { ErrorMessage } from "~/components/chat/ErrorMessage";
 import { LLMMessage } from "~/components/chat/LLMMessage";
 import { UserMessage } from "~/components/chat/UserMessage";
+import { useFlashcard } from "~/lib/context/FlashcardContext";
 
 // LLM model name
 const LLM_MODEL_NAME = "gemini-2.5-flash-preview-04-17";
@@ -94,14 +95,7 @@ export default function ChatPage() {
     const [inputText, setInputText] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const messageEndRef = useRef<HTMLDivElement>(null);
-
-    // Get language from localStorage (it's managed in the Header component now)
-    const getSelectedLanguage = () => {
-        if (typeof window !== "undefined") {
-            return localStorage.getItem("selectedLanguage") || "fr";
-        }
-        return "fr";
-    };
+    const { language } = useFlashcard();
 
     // Call LLM API
     async function callLLM(
@@ -115,7 +109,7 @@ export default function ChatPage() {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
-                    lang: getSelectedLanguage(),
+                    lang: language,
                     modelName: LLM_MODEL_NAME,
                     userPrompt,
                     conversationHistory,
@@ -345,7 +339,6 @@ export default function ChatPage() {
                                     <CardProposalMessage
                                         key={index}
                                         message={message}
-                                        language={getSelectedLanguage()}
                                         onAddToAnki={handleAddToAnki}
                                     />
                                 );

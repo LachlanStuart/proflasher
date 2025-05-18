@@ -2,43 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useFlashcard } from "~/lib/context/FlashcardContext";
 
 export default function Header() {
     const pathname = usePathname();
-    const [availableLanguages, setAvailableLanguages] = useState<string[]>([]);
-    const [selectedLanguage, setSelectedLanguage] = useState<string>(() => {
-        if (typeof window !== "undefined") {
-            return localStorage.getItem("selectedLanguage") || "fr";
-        }
-        return "fr";
-    });
-
-    // Fetch available languages
-    useEffect(() => {
-        const fetchLanguages = async () => {
-            try {
-                const response = await fetch("/api/settings/languages");
-                if (!response.ok) throw new Error("Failed to fetch languages");
-                const data = await response.json();
-                setAvailableLanguages(data);
-                if (data.length > 0 && !data.includes(selectedLanguage)) {
-                    setSelectedLanguage(data[0]);
-                }
-            } catch (error) {
-                console.error("Error fetching languages:", error);
-            }
-        };
-
-        fetchLanguages();
-    }, []);
-
-    // Save selected language to localStorage
-    useEffect(() => {
-        if (typeof window !== "undefined" && selectedLanguage) {
-            localStorage.setItem("selectedLanguage", selectedLanguage);
-        }
-    }, [selectedLanguage]);
+    const { language, setLanguage, availableLanguages } = useFlashcard();
 
     // Active link style
     const activeLinkClass = "text-white bg-gray-700 px-3 py-1 rounded";
@@ -54,8 +22,8 @@ export default function Header() {
                         </Link>
                         <div className="flex items-center space-x-4">
                             <select
-                                value={selectedLanguage}
-                                onChange={(e) => setSelectedLanguage(e.target.value)}
+                                value={language}
+                                onChange={(e) => setLanguage(e.target.value)}
                                 className="bg-gray-700 text-white px-3 py-1 rounded"
                             >
                                 {availableLanguages.map((lang) => (

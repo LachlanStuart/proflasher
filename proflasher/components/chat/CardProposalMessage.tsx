@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import templates from "~/lib/cardModel/noteTemplates";
+import { useFlashcard } from "~/lib/context/FlashcardContext";
 
 // Define the CardProposalMessageType locally to fix import error
 interface CardProposalMessageType {
@@ -10,7 +10,6 @@ interface CardProposalMessageType {
 
 interface CardProposalMessageProps {
     message: CardProposalMessageType;
-    language: string;
     onAddToAnki: (
         card: Record<string, string>,
         modelName: string,
@@ -22,9 +21,9 @@ interface CardProposalMessageProps {
 
 export function CardProposalMessage({
     message,
-    language,
     onAddToAnki,
 }: CardProposalMessageProps) {
+    const { language, activeCardTypes, setActiveCardTypes, template } = useFlashcard();
     const [editedCards, setEditedCards] = useState<Record<string, string>[]>(
         message.cards.map((card: Record<string, string>) => ({ ...card })),
     );
@@ -32,29 +31,6 @@ export function CardProposalMessage({
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isAddingAll, setIsAddingAll] = useState(false);
     const textareaRefs = useRef<{ [field: string]: HTMLTextAreaElement | null }>({});
-    const [activeCardTypes, setActiveCardTypes] = useState<string[]>(() => {
-        if (typeof window === "undefined") return [];
-        const saved = localStorage.getItem(`activeCardTypes_${language}`);
-        if (saved) {
-            try {
-                return JSON.parse(saved);
-            } catch {
-                return [];
-            }
-        }
-        const template = templates[language];
-        if (template) {
-            return Object.keys(template.cardDescriptions);
-        }
-        return [];
-    });
-
-    // Save active card types to localStorage when they change
-    useEffect(() => {
-        if (typeof window !== "undefined") {
-            localStorage.setItem(`activeCardTypes_${language}`, JSON.stringify(activeCardTypes));
-        }
-    }, [activeCardTypes, language]);
 
     // Auto-resize textareas on content change
     const resizeTextarea = (textarea: HTMLTextAreaElement) => {
@@ -116,10 +92,6 @@ export function CardProposalMessage({
     const handleSubmit = async () => {
         setIsSubmitting(true);
         try {
-            const template = templates[language];
-            if (!template) {
-                throw new Error(`Template not found for language ${language}`);
-            }
             await onAddToAnki(editedCards[selectedCard]!, template.noteType, activeCardTypes);
         } finally {
             setIsSubmitting(false);
@@ -132,10 +104,6 @@ export function CardProposalMessage({
 
         setIsAddingAll(true);
         try {
-            const template = templates[language];
-            if (!template) {
-                throw new Error(`Template not found for language ${language}`);
-            }
             // Add each card from this proposal one by one
             for (const card of editedCards) {
                 await onAddToAnki(card, template.noteType, activeCardTypes);
@@ -147,16 +115,6 @@ export function CardProposalMessage({
 
     // Get current card
     const currentCard = editedCards[selectedCard]!;
-
-    // Get template for field ordering
-    const template = templates[language];
-    if (!template) {
-        return (
-            <div className="mb-4 rounded border border-red-200 bg-red-50 p-2 text-red-500">
-                Template not found for language {language}
-            </div>
-        );
-    }
 
     // Generate ordered fields based on template.fieldOrder if available
     const orderedFields = Object.keys(template.fieldDescriptions).map(
