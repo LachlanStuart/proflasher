@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from "react";
 
 export default function SettingsPage() {
     const [globalInstructions, setGlobalInstructions] = useState<string>("");
-    const [confusedWords, setConfusedWords] = useState<string>("");
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [isSaving, setIsSaving] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
@@ -23,7 +22,6 @@ export default function SettingsPage() {
         const language = getSelectedLanguage();
         if (!language) {
             setGlobalInstructions("");
-            setConfusedWords("");
             return;
         }
 
@@ -31,24 +29,17 @@ export default function SettingsPage() {
         setError(null);
         setSaveMessage(null);
         try {
-            const filesToFetch = [
-                { name: "global_llm_instructions.txt", setter: setGlobalInstructions },
-                { name: "confused_words.txt", setter: setConfusedWords },
-            ];
-            for (const file of filesToFetch) {
-                const response = await fetch(`/api/settings/${language}/${file.name}`);
-                if (!response.ok) {
-                    throw new Error(
-                        `Failed to fetch ${file.name} for ${language}: ${response.statusText}`,
-                    );
-                }
-                const data = await response.json();
-                file.setter(data.content || "");
+            const response = await fetch(`/api/settings/${language}/prompt.md`);
+            if (!response.ok) {
+                throw new Error(
+                    `Failed to fetch prompt.md for ${language}: ${response.statusText}`,
+                );
             }
+            const data = await response.json();
+            setGlobalInstructions(data.content || "");
         } catch (err: any) {
             setError(err.message);
             setGlobalInstructions(""); // Clear fields on error
-            setConfusedWords("");
         } finally {
             setIsLoading(false);
         }
@@ -111,68 +102,43 @@ export default function SettingsPage() {
 
     return (
         <div className="h-[calc(100vh-80px)] overflow-y-auto pb-4">
-            {(isLoading || isSaving) && <p>Loading/Saving...</p>}
-            {error && <p className="py-2 text-red-500">Error: {error}</p>}
-            {saveMessage && <p className="py-2 text-green-500">{saveMessage}</p>}
 
             {language && (
-                <>
-                    <div className="mb-6">
-                        <label
-                            htmlFor="global-instructions"
-                            className="block font-medium text-gray-700 text-sm"
-                        >
-                            Global LLM Instructions for {language.toUpperCase()}:
-                        </label>
-                        <textarea
-                            id="global-instructions"
-                            rows={10}
-                            className="mt-1 block w-full rounded-md border-gray-300 p-2 shadow-sm sm:text-sm"
-                            value={globalInstructions}
-                            onChange={(e) => setGlobalInstructions(e.target.value)}
-                            placeholder={`Enter global LLM instructions for ${language.toUpperCase()}...`}
-                            disabled={isSaving}
-                        />
+                <div className="mb-6">
+                    <label
+                        htmlFor="global-instructions"
+                        className="block font-medium text-gray-700 text-sm"
+                    >
+                        Global LLM Instructions for {language.toUpperCase()}:
+                    </label>
+                    <textarea
+                        id="global-instructions"
+                        rows={10}
+                        className="mt-1 block w-full rounded-md border-gray-300 p-2 shadow-sm sm:text-sm"
+                        value={globalInstructions}
+                        onChange={(e) => setGlobalInstructions(e.target.value)}
+                        placeholder={`Enter global LLM instructions for ${language.toUpperCase()}...`}
+                        disabled={isSaving}
+                    />
+                    <div className="mt-2 flex items-center gap-4">
                         <button
                             onClick={() =>
                                 handleSaveFile(
-                                    "global_llm_instructions.txt",
-                                    globalInstructions,
+                                    "prompt.md",
+                                    globalInstructions
                                 )
                             }
                             disabled={isSaving}
-                            className="mt-2 rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+                            className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
                         >
-                            {isSaving ? "Saving..." : "Save Global Instructions"}
+                            {isSaving ? "Saving..." : "Save"}
                         </button>
+                        {isLoading && <p>Loading...</p>}
+                        {isSaving && <p>Saving...</p>}
+                        {error && <p className="text-red-500">Error: {error}</p>}
+                        {saveMessage && <p className="text-green-500">{saveMessage}</p>}
                     </div>
-
-                    <div className="mb-6">
-                        <label
-                            htmlFor="confused-words"
-                            className="block font-medium text-gray-700 text-sm"
-                        >
-                            Confused Words for {language.toUpperCase()} (one group per
-                            line, words separated by commas):
-                        </label>
-                        <textarea
-                            id="confused-words"
-                            rows={5}
-                            className="mt-1 block w-full rounded-md border-gray-300 p-2 shadow-sm sm:text-sm"
-                            value={confusedWords}
-                            onChange={(e) => setConfusedWords(e.target.value)}
-                            placeholder={`Enter confused words for ${language.toUpperCase()}...`}
-                            disabled={isSaving}
-                        />
-                        <button
-                            onClick={() => handleSaveFile("confused_words.txt", confusedWords)}
-                            disabled={isSaving}
-                            className="mt-2 rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
-                        >
-                            {isSaving ? "Saving..." : "Save Confused Words"}
-                        </button>
-                    </div>
-                </>
+                </div>
             )}
         </div>
     );
