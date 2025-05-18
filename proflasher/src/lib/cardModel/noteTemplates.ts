@@ -3,7 +3,6 @@ type CardModel = {
     Front: string;
 };
 interface NoteModel {
-    description: string;
     noteType: string;
     fieldDescriptions: Record<string, string>;
     fieldGroups: string[][];
@@ -38,7 +37,7 @@ const escapeHTMLAttribute = (str: string) =>
 
 const langFieldGroups = {
     de: [["DE", "EN"]],
-    fr: [["FR", "EN"], ["ExtraFR", "ExtraEN"]],
+    fr: [["ExtraFR", "ExtraEN"], ["FR", "EN"]],
     zh: [["ZH", "Hant", "Pinyin", "EN"]],
     jp: [["JP", "Kana", "EN"]],
 }
@@ -79,19 +78,7 @@ const cards = (lang: keyof typeof langFieldGroups, ...rows: CardRow[]) => {
 }
 
 templates["de"] = {
-    description: `
-This card model is for learning German. Each card should have a word/phrase and 3 example sentences using the word/phrase.
-This is represented by the DE and EN fields, using semicolons to separate the word/phrase and each sentence.
-When there are multiple English translations for the word/phrase, use a comma to separate them.
-The word/phrase should be infinitive/dictionary form with an article if appropriate, e.g. "können"/"to be able to", "die Katze"/"the cat", "rot"/"red".
-However, reflexive verbs should be in first or second person so that the case is clear, e.g. "ich stelle mir vor"/"I imagine".
-The English sentences may also use variations of the word when appropriate.
-E.g.
-DE: der Betrieb;der Betrieb ist sehr groß.;der Betrieb macht viel Geld.;der Betrieb ist sehr erfolgreich.
-EN: the operation, business;the operation is very large.;the company makes a lot of money.;the business is very successful.
 
-The other fields (Key, Mnemonic, Related) should not be semicolon-separated.
-`,
     noteType: "DE<->EN",
     fieldDescriptions: {
         Key: keyDescription,
@@ -119,28 +106,6 @@ The other fields (Key, Mnemonic, Related) should not be semicolon-separated.
 };
 
 templates["fr"] = {
-    description: `
-This card model is for learning French. Each card should have a word/phrase and 3 example sentences using the word/phrase.
-This is represented by the FR and EN fields, using semicolons to separate the word/phrase and each sentence.
-When there are multiple English translations for the word/phrase, use a comma to separate them.
-The English sentences may also use variations of the word when appropriate.
-When the French word's gender is not clear in its dictionary form, add a suffix like "(f)" or "(m)".
-E.g.
-FR: l'opération (f);l'opération est très grande.;l'opération fait beaucoup d'argent.;l'opération est très réussie.
-EN: the operation, business;the operation is very large;the company makes a lot of money;the business is very successful
-
-ExtraFR and ExtraEN are similar semicolon-separated lists, but follow different rules:
-For Verbs, they should be a list of conjugations: Infinitive;Singular first-person present;Singular second-person present;Singular third-person present;Plural third-person present;Infinitif passé;First-person passé composé;Third-person passé composé
-E.g.:
-ExtraFR: savoir;je sais;tu sais;il sait;ils savent;avoir su;j'ai su;il a su
-ExtraEN: know;I know;You know;He knows;They know;have known;I have known;he has known
-For Adjectives, they should be a list of declinations: Singular masculine;Singular feminine;Plural masculine;Plural feminine
-with the English a shorthand for the name of the form.
-E.g.:
-ExtraFR: grand;grande;grands;grandes
-ExtraEN: m.;f.;m. pl.;f. pl.
-For all other word types, leave these fields empty.
-`,
     noteType: "FR<->EN",
     fieldDescriptions: {
         Key: keyDescription,
@@ -170,23 +135,6 @@ For all other word types, leave these fields empty.
 };
 
 templates["zh"] = {
-    description: `
-This card model is for learning Chinese. Each card should have a word/phrase and 3 example sentences using the word/phrase.
-This is represented by the ZH, Hant, Pinyin and EN fields, using semicolons to separate the word/phrase and each sentence.
-
-When there are multiple English translations for the word/phrase, use a comma to separate them.
-The English sentences may also use variations of the word when appropriate.
-E.g.
-这是一件小事情。 (Zhè shì yī jiàn xiǎo shìqing.) - This is a small matter/thing.
-我有很多事情要做。 (Wǒ yǒu hěn duō shìqing yào zuò.) - I have many things to do.
-这件事情很重要。 (Zhè jiàn shìqing hěn zhòngyào.) - This matter is very important.
-
-ZH: 事情;这是一件小事情;我有很多事情要做;这件事情很重要
-Hant: 事情;這是一件小事情;我有很多事情要做;這件事情很重要
-Pinyin: shìqing;zhè shì yī jiàn xiǎo shìqing;wǒ yǒu hěn duō shìqing yào zuò;zhè jiàn shìqing hěn zhòngyào
-EN: affair, matter;this is a small matter/thing;I have many things to do;this matter is very important
-HasHant:
-(HasHant has been left blank because the simplified and traditional forms of the word are identical)`,
     noteType: "ZH<->EN",
     fieldDescriptions: {
         Key: keyDescription,
@@ -228,19 +176,6 @@ HasHant:
 };
 
 templates["jp"] = {
-    description: `
-This card model is for learning Japanese. Each card should have a word/phrase (in dictionary or infinitive form), then 3 example sentences using the word/phrase.
-This is represented by the JP, Kana and EN fields, using semicolons to separate the word/phrase and the 3 sentences.
-This format may be changed if the user requests it (e.g. 5 sentences with a common grammar point).
-Avoid using semicolons except to separate the list items, as they're treated as a list separator.
-
-When there are multiple English translations for the word/phrase, use a comma to separate them.
-The English sentences may also use variations of the word when appropriate.
-E.g.
-JP: 操作;この機械の操作は簡単です;リモコンでテレビを操作します;パソコンの操作を習っています
-Kana: そうさ;この きかい の そうさ は かんたん です;リモコン で テレビ を そうさ します;パソコン の そうさ を ならっています
-EN: to operate, to handle;the operation of this machine is simple;I operate the TV with a remote control;I am learning how to operate a computer
-`,
     noteType: "JP<->EN",
     fieldDescriptions: {
         Key: keyDescription,

@@ -177,22 +177,9 @@ async function buildSystemInstructions(lang: string): Promise<string> {
     const template = templates[lang];
     if (!template) throw new Error(`Template for language ${lang} not found`);
 
-    const langPrompt = await fs.readFile(path.join(env.DATA_REPO_PATH, lang, "prompt.md"), "utf-8");
-
-    return `You are an assistant that helps users create flashcards for language learning.
-
-There's only one type of flash card currently available for this language:
-${template.description}
-Fields:
-${Object.entries(template.fieldDescriptions).map(([field, description]) => `- ${field}: ${description}`).join("\n")}
-
-When the user asks you to create flashcards you should create learning materials that match the template structure for a properly formatted flashcard. You may also just chat with the user if they have questions.
-If the user just pastes a bunch of words, propose flashcards for all of them.
-
-Here is guidance the user gave for this language:
-${langPrompt}
-`;
+    return await fs.readFile(path.join(env.DATA_REPO_PATH, lang, "prompt.md"), "utf-8");
 }
+
 
 // Convert conversation history to OpenAI format
 function formatConversationHistory(
