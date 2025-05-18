@@ -1,33 +1,22 @@
 ---
 description:
 globs:
-alwaysApply: false
+alwaysApply: true
 ---
-# Next.js App Structure
 
-The project uses Next.js App Router for page routing and layout management.
+## Directory Structure
 
-## Key Pages
+- [proflasher/src/app](mdc:proflasher/src/app): Next.js app router pages and API routes
+  - Key file: [page.tsx](mdc:proflasher/src/app/chat/page.tsx): The main chat interface
+  - Key file: [route.ts](mdc:proflasher/src/app/api/llm/chat/route.ts): The web API for chat, which includes LLM calls
+  - Key file: [route.ts](mdc:proflasher/src/app/api/anki/route.ts): The web API for Anki
+- [proflasher/src/components](mdc:proflasher/src/components): React components used across the application
+  - Key file: [CardProposalMessage.tsx](mdc:proflasher/src/components/chat/CardProposalMessage.tsx): Chat component for proposed cards
+- [proflasher/src/lib](mdc:proflasher/src/lib): Core functionality and utilities
+  - Key file: [ankiConnect.ts](mdc:proflasher/src/lib/ankiConnect.ts): server-side library for calling Anki via AnkiConnect
+  - Key file: [noteTemplates.ts](mdc:proflasher/src/lib/cardModel/noteTemplates.ts): Flashcard template definitions for different languages
+  -
+- [proflasher/src/styles](mdc:proflasher/src/styles): CSS and styling files
+- [proflasher/src/scripts](mdc:proflasher/src/scripts): Utility scripts for the project
+- [data](mdc:data): Storage for flashcard data (gitignored in actual repo)
 
-- [app/page.tsx](mdc:proflasher/src/app/page.tsx): Home page
-- [app/chat/page.tsx](mdc:proflasher/src/app/chat/page.tsx): Main flashcard generation interface
-- [app/settings/](mdc:proflasher/src/app/settings/): Application settings
-
-## API Routes
-
-- [app/api/llm/](mdc:proflasher/src/app/api/llm/): AI model interaction endpoints
-- [app/api/anki/](mdc:proflasher/src/app/api/anki/): Anki operations and management
-
-## Layout Structure
-
-- [app/layout.tsx](mdc:proflasher/src/app/layout.tsx): Root layout with header and global styling
-- Uses the Inter font from Google Fonts
-- Includes a header component from [components/Header.tsx](mdc:proflasher/src/components/Header.tsx)
-
-## Routing Pattern
-
-The application follows Next.js App Router conventions:
-- Each page is defined by a `page.tsx` file
-- Route parameters are defined with `[param]` folders
-- API routes are defined in `route.ts` files
-- Shared layouts are defined in `layout.tsx` files

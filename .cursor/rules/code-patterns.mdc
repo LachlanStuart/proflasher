@@ -11,6 +11,7 @@ alwaysApply: true
 - Let errors propagate naturally - they give better stack traces
 - Don't add default values - it's simpler if everything needed is always provided
 - Don't add configuration - just put inline values
+- Make minimal changes
 
 ## API Pattern
 - Direct access to filesystem using node:fs/promises
