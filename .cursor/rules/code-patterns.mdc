@@ -1,0 +1,22 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+# Code Patterns and Design Principles
+
+## Simplicity First
+- Stateless functions are preferred over classes/services
+- Avoid try/catch blocks when possible
+- Let errors propagate naturally - they give better stack traces
+- Don't add default values - it's simpler if everything needed is always provided
+- Don't add configuration - just put inline values
+
+## API Pattern
+- Direct access to filesystem using node:fs/promises
+- Access environment variables with e.g. `import { env } from "~/env";` and `env.DATA_REPO_PATH`
+
+## Type Safety
+- Use explicit TypeScript types but keep them minimal
+- Avoid optional properties
+- Don't preemptively add properties

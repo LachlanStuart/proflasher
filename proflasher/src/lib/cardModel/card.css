@@ -1,0 +1,136 @@
+.bsp-card {
+    font-family: arial;
+    font-size: 20px;
+    line-height: 1.2em;
+    text-align: center;
+    /*    color: black;
+    background-color: white; */
+    display: flex;
+    flex-direction: column;
+    justify-content: start;
+    align-items: center;
+    min-height: 100vh;
+}
+
+table.pairs_table {
+    margin-top: 1em;
+}
+
+table.pairs_table td {
+    text-align: right;
+    padding-right: 0.25em;
+    min-width: 2.2em;
+}
+
+table.pairs_table td+td {
+    text-align: left;
+}
+
+table.pairs_table td.mnemonic {
+    text-align: center;
+}
+
+.backData {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+table.field-group-table {
+    font-size: 0.75em;
+    margin-top: 1em;
+}
+
+table.field-group-table td {
+    text-align: left;
+    padding-right: 0.25em;
+    min-width: 2.2em;
+}
+
+table.field-group-table td+td {
+    text-align: left;
+}
+
+.en,
+.de,
+.zh,
+.中文,
+.fr,
+.jp,
+.日本語 {
+    display: inline-block;
+    width: 2.5rem;
+    text-align: center;
+    white-space: nowrap;
+    box-sizing: border-box;
+}
+
+.en {
+    color: #ce1124;
+    background-color: #ffffff;
+}
+
+.de {
+    color: #fed100;
+    background-color: #1e1e1e;
+    text-shadow: #d52b1e -1px -1px 0, #d52b1e -1px 1px 0, #d52b1e 1px -1px 0,
+        #d52b1e 1px 1px 0;
+}
+
+.zh,
+.中文 {
+    color: #ffde00;
+    background-color: #de2910;
+}
+
+.jp,
+.日本語 {
+    color: #de2910;
+    background-color: #ffffff;
+}
+
+.中文:not(table.field-group-table *),
+.日本語:not(table.field-group-table *) {
+    letter-spacing: -1px;
+    line-height: 24px;
+    padding-right: 2px;
+    font-size: 17px;
+}
+
+.fr {
+    color: #ed2939;
+    background-color: #002654;
+    text-shadow: #ffffff -1px -1px 0, #ffffff -1px 1px 0, #ffffff 1px -1px 0,
+        #ffffff 1px 1px 0;
+}
+
+.speak,
+.speaknow,
+[data-speak] {
+    cursor: pointer;
+}
+
+:lang(zh):not(table.field-group-table *),
+[lang="zh"]:not(table.field-group-table *),
+:lang(jp):not(table.field-group-table *),
+[lang="jp"]:not(table.field-group-table *) {
+    font-size: 36px;
+    line-height: 40px;
+}
+
+.cloze {
+    font-weight: bold;
+    color: lightgrey;
+}
+
+.back .cloze {
+    color: #888;
+    font-style: italic;
+}
+
+.front .only-back,
+.back .only-front,
+.hide {
+    display: none;
+}

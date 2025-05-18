@@ -1,0 +1,20 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+# Proflasher Project Overview
+
+This is a personal open-source flashcard generation project focused on simplicity rather than robustness or configurability.
+
+The project is a Next.js web application that:
+1. Generates flashcards by providing tools to Google Gemini models (via OpenAI API) and asking them to generate drafts of cards
+2. Allows customizing the cards before they're saved to Anki
+3. Allows asking Gemini to do bulk queries and rewriting cards
+4. Supports multiple languages, each with its own field structure and card styles, defined in [noteTemplates.ts](mdc:proflasher/web_ui/src/lib/cardModel/noteTemplates.ts)
+
+## Key Design Principles
+- Minimalist code with direct function calls rather than services/classes
+- No extensive error handling - allows errors to propagate
+- Configuration is minimal, with simple environment variables used directly
+- Files are structured based on Next.js conventions
