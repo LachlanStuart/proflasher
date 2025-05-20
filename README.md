@@ -44,3 +44,4 @@ You need to add a value for `LLM_API_KEY` to `proflasher/.env` to access Google 
 4. Hope it works
 5. Copy the key it gives you into the `proflasher/.env` file.
 
+### Setup instructions are still WIP
