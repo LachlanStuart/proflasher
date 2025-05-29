@@ -10,7 +10,7 @@ import {
 // Define the CardProposalMessageType locally to fix import error
 interface CardProposalMessageType {
     type: "card_proposal";
-    cards: Array<Record<string, string>>;
+    cards: RowOrientedCard[];
     error?: string;
     beforeCardsMessageToUser?: string;
     afterCardsMessageToUser?: string;
@@ -33,11 +33,9 @@ export function CardProposalMessage({
 }: CardProposalMessageProps) {
     const { language, activeCardTypes, setActiveCardTypes, template } = useFlashcard();
 
-    // Convert column-oriented cards to row-oriented for editing
+    // Use the row-oriented cards directly
     const [editedRowCards, setEditedRowCards] = useState<RowOrientedCard[]>(() => {
-        return message.cards.map(card =>
-            columnToRowOriented(card, template.tableDefinitions)
-        );
+        return message.cards;
     });
 
     const [selectedCard, setSelectedCard] = useState(0);

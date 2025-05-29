@@ -26,10 +26,12 @@ tableDefinitions:
       FR: French text (words, phrases, or sentences)
       EN: English translation or equivalent
     rowDescriptions:
-      Word: Dictionary form of the word/phrase. Only use the masculine singular form for nouns. Do not include a suffix in the EN field.
-      WordFS: (Nouns only) Feminine singular form.
-      WordMP: (Nouns only) Masculine plural form.
-      WordFP: (Nouns only) Feminine plural form.
+      Word: >-
+        The word/phrase.
+        Only include a single form in FR. Include the minimum number of EN translations to give the gist of the word.
+        For verbs, use infinitive form and prefix it with "to" in EN.
+        For other word types, use the gender & number that was provided, or default to masculine/singular.
+        Only include a (f) or (pl) suffix in English if it's relevant.
       Sentence1: First example sentence showing usage
       Sentence2: Second example sentence for context
       Sentence3: Third example sentence for variety
@@ -40,7 +42,7 @@ tableDefinitions:
       ExtraFR: French conjugations or declensions
       ExtraEN: English descriptions or translations of the forms
     rowDescriptions:
-      Dict: Infinitive form for verbs e.g. 'faire/to do', dictionary form for adjectives.
+      Dict: (verbs only) Infinitive form e.g. 'faire/to do'
       1S: (verbs only) First-person singular present form e.g. 'je fais/I do'
       2S: (verbs only) Second-person singular present form e.g. 'tu fais/you do'
       3S: (verbs only) Third-person singular present form e.g. 'il fait/he does'

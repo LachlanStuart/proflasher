@@ -138,11 +138,16 @@ export const addMissingFields = async (language?: string): Promise<string[]> => 
                 const existingFields = await Anki.modelFieldNames(modelName);
                 log(`Existing fields in ${modelName}: ${existingFields.join(', ')}`);
 
-                // Get all fields that should exist (including RowOrder fields)
+                // Get all fields that should exist (including table columns and RowOrder fields)
                 const requiredFields = new Set<string>();
 
                 // Add all fields from fieldDescriptions
                 Object.keys(template.fieldDescriptions).forEach(field => requiredFields.add(field));
+
+                // Add table columns from tableDefinitions
+                for (const tableDef of template.tableDefinitions) {
+                    tableDef.columns.forEach(col => requiredFields.add(col));
+                }
 
                 // Add RowOrder fields for each table
                 for (const tableDef of template.tableDefinitions) {
@@ -318,6 +323,11 @@ export const createMissingModels = async (language?: string): Promise<string[]> 
 
                 // Add all fields from fieldDescriptions
                 Object.keys(template.fieldDescriptions).forEach(field => fields.add(field));
+
+                // Add table columns from tableDefinitions
+                for (const tableDef of template.tableDefinitions) {
+                    tableDef.columns.forEach(col => fields.add(col));
+                }
 
                 // Add RowOrder fields for each table
                 for (const tableDef of template.tableDefinitions) {

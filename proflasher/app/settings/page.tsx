@@ -117,7 +117,7 @@ export default function SettingsPage() {
     };
 
     return (
-        <div className="h-[calc(100vh-80px)] overflow-y-auto pb-4">
+        <div className="pb-4">
             {(isLoading || isSaving) && <p>Loading/Saving...</p>}
             {error && <p className="py-2 text-red-500">Error: {error}</p>}
             {saveMessage && <p className="py-2 text-green-500">{saveMessage}</p>}

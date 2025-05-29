@@ -8,13 +8,8 @@ import { validateNote, loadTemplates, type Templates } from "~/lib/cardModel/not
 import { rowToColumnOriented, columnToRowOriented, type RowOrientedCard } from "~/lib/cardModel/tableCard";
 import { generateTablePrompt } from "~/lib/llm/tablePrompts";
 
-// Cache templates in memory to avoid reading from disk on every request
-let templatesCache: Templates | null = null;
 async function getTemplates(): Promise<Templates> {
-    if (!templatesCache) {
-        templatesCache = await loadTemplates();
-    }
-    return templatesCache;
+    return await loadTemplates();  // Don't cache. User may edit the templates live.
 }
 
 interface UserMessage {
@@ -37,12 +32,14 @@ interface AnkiSearchMessage {
     query: string;
     results: Array<Record<string, any>>;
     error?: string;
+    toolCallId: string;
 }
 
 interface CardProposalMessage {
     type: "card_proposal";
-    cards: Array<Record<string, string>>;
+    cards: RowOrientedCard[];
     error?: string;
+    toolCallId: string;
 }
 
 type ConversationMessage =
@@ -140,7 +137,7 @@ If you use this, make sure to limit the note type specific to the current langua
 ] as const;
 
 // Search Anki for cards
-async function searchAnki(query: string): Promise<AnkiSearchMessage> {
+async function searchAnki(query: string, toolCallId: string): Promise<AnkiSearchMessage> {
     try {
         const cardIds = await Anki.findCards(query);
         const fullResults = cardIds.length > 0 ? await Anki.cardsInfo(cardIds) : [];
@@ -160,6 +157,7 @@ async function searchAnki(query: string): Promise<AnkiSearchMessage> {
             type: "anki_search",
             query,
             results: simplifiedResults,
+            toolCallId,
         };
     } catch (error) {
         console.error("Error searching Anki:", error);
@@ -168,6 +166,7 @@ async function searchAnki(query: string): Promise<AnkiSearchMessage> {
             query,
             results: [],
             error: String(error),
+            toolCallId,
         };
     }
 }
@@ -176,44 +175,60 @@ async function searchAnki(query: string): Promise<AnkiSearchMessage> {
 async function proposeCards(
     rowCards: RowOrientedCard[],
     lang: string,
+    toolCallId: string,
 ): Promise<CardProposalMessage> {
     const templates = await getTemplates();
     const template = templates[lang];
     if (!template) throw new Error(`Template for language ${lang} not found`);
 
-    // Convert row-oriented cards to column-oriented for validation and Anki
-    const columnCards = rowCards.map(rowCard =>
-        rowToColumnOriented(rowCard, template.tableDefinitions)
-    );
+    // Basic validation of row cards structure
+    const invalidCards: string[] = [];
+    for (const [index, rowCard] of rowCards.entries()) {
+        // Determine which tables actually contain required fields
+        const tableColumns = new Set<string>();
+        const requiredTableNames = new Set<string>();
 
-    // Validate converted cards
-    const invalidCards = await Promise.all(columnCards.map(async (card, index) => {
-        const { isValid, error } = await validateNote(template.noteType, card, templates);
-        return isValid ? [] : [`Card #${index + 1} has invalid fields: ${error}`];
-    }));
+        for (const tableDef of template.tableDefinitions) {
+            tableDef.columns.forEach(col => tableColumns.add(col));
 
-    const allInvalidCards = invalidCards.flat();
-    if (allInvalidCards.length > 0) {
-        console.error("Invalid cards detected:", allInvalidCards);
-        return {
-            type: "card_proposal",
-            cards: columnCards,
-            error: `Invalid cards detected:\n${allInvalidCards.join("\n")}`,
-        };
-    }
+            // Check if this table contains any required fields
+            const hasRequiredColumns = tableDef.columns.some(col =>
+                template.requiredFields.includes(col)
+            );
+            if (hasRequiredColumns) {
+                requiredTableNames.add(tableDef.name);
+            }
+        }
 
-    // Fill null fields with empty strings
-    for (const card of columnCards) {
-        for (const field of Object.keys(template.fieldDescriptions)) {
-            if (!card[field]) {
-                card[field] = "";
+        // Check that tables containing required fields exist and have data
+        for (const tableName of requiredTableNames) {
+            if (!rowCard.tables[tableName] || Object.keys(rowCard.tables[tableName]).length === 0) {
+                invalidCards.push(`Card #${index + 1}: Missing required table '${tableName}'`);
+            }
+        }
+
+        // Check that required non-table fields exist if they're not table columns
+        for (const requiredField of template.requiredFields) {
+            if (!tableColumns.has(requiredField) && !rowCard.fields?.[requiredField]) {
+                invalidCards.push(`Card #${index + 1}: Missing required field '${requiredField}'`);
             }
         }
     }
 
+    if (invalidCards.length > 0) {
+        console.error("Invalid cards detected:", invalidCards);
+        return {
+            type: "card_proposal",
+            cards: rowCards,
+            error: `Invalid cards detected:\n${invalidCards.join("\n")}`,
+            toolCallId,
+        };
+    }
+
     return {
         type: "card_proposal",
-        cards: columnCards,
+        cards: rowCards,
+        toolCallId,
     };
 }
 
@@ -270,38 +285,74 @@ async function buildSystemInstructions(lang: string): Promise<string> {
 function formatConversationHistory(
     history: ConversationMessage[],
 ): OpenAI.Chat.Completions.ChatCompletionMessageParam[] {
-    return history.map((message) => {
+    const result: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [];
+
+    for (const message of history) {
         switch (message.type) {
             case "user":
-                return { role: "user", content: message.content };
+                result.push({ role: "user", content: message.content });
+                break;
             case "llm":
-                return { role: "assistant", content: message.content };
+                result.push({ role: "assistant", content: message.content });
+                break;
             case "error":
                 // Skip error messages when sending to LLM
-                return { role: "user", content: `Previous error: ${message.content}` };
+                result.push({ role: "user", content: `Previous error: ${message.content}` });
+                break;
             case "anki_search":
-                return {
+                // Format as proper tool call and result using preserved IDs
+                const searchId = message.toolCallId;
+                result.push({
                     role: "assistant",
+                    // content: null,
+                    tool_calls: [{
+                        id: searchId,
+                        type: "function" as const,
+                        function: {
+                            name: "searchAnki",
+                            arguments: JSON.stringify({ query: message.query })
+                        }
+                    }]
+                });
+                result.push({
+                    role: "tool",
+                    tool_call_id: searchId,
                     content: JSON.stringify({
-                        tool_call: "anki_search",
-                        query: message.query,
                         results: message.results,
-                        ...(message.error && { error: message.error }),
-                    }),
-                };
+                        ...(message.error && { error: message.error })
+                    })
+                });
+                break;
             case "card_proposal":
-                return {
+                // Format as proper tool call and result using preserved IDs
+                const proposeId = message.toolCallId;
+                result.push({
                     role: "assistant",
+                    // content: null,
+                    tool_calls: [{
+                        id: proposeId,
+                        type: "function" as const,
+                        function: {
+                            name: "proposeCards",
+                            arguments: JSON.stringify({ cards: message.cards })
+                        }
+                    }]
+                });
+                result.push({
+                    role: "tool",
+                    tool_call_id: proposeId,
                     content: JSON.stringify({
-                        tool_call: "propose_cards",
-                        cards: message.cards,
-                        ...(message.error && { error: message.error }),
-                    }),
-                };
+                        success: !message.error,
+                        ...(message.error && { error: message.error })
+                    })
+                });
+                break;
             default:
-                return { role: "user", content: "" };
+                result.push({ role: "user", content: "" });
         }
-    });
+    }
+
+    return result;
 }
 
 export async function POST(request: NextRequest) {
@@ -376,8 +427,10 @@ async function callLLMWithRetry(
         try {
             const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
                 { role: "user", content: await buildSystemInstructions(lang) },
-                ...formatConversationHistory(conversationHistory),
+                ...formatConversationHistory(newHistory),
             ];
+            console.log("Request:", messages);
+
             completion = await openai.chat.completions.create({
                 model: modelName,
                 messages,
@@ -393,11 +446,12 @@ async function callLLMWithRetry(
             } else {
                 throw new Error("No response received from LLM");
             }
-            console.log("Request:", messages);
             console.log("Response:", responseMessage);
 
         } catch (error: any) {
-            console.error("Error calling LLM:", error);
+            console.error("Error calling LLM:");
+            console.error(error);
+            console.error(error.headers);
             if (retryCount++ >= 3) {
                 newHistory.push({
                     type: "error",
@@ -408,36 +462,72 @@ async function callLLMWithRetry(
             continue;
         }
 
-        // Process response
-        if (responseMessage.tool_calls && responseMessage.tool_calls.length > 0) {
-            console.log("Tool call. Message?", responseMessage.content);
-            let isDone = true;
-            for (const toolCall of responseMessage.tool_calls) {
-                const functionName = toolCall.function.name;
-                try {
-                    const args = JSON.parse(toolCall.function.arguments);
-                    console.log(functionName, args);
+        let messageContent: string | null = null;
+        let toolCalls: OpenAI.Chat.Completions.ChatCompletionMessageToolCall[] | null = null;
 
+        if (responseMessage.content) {
+            let contentStr: string;
+            // Handle both string and array content types
+            if (typeof responseMessage.content === 'string') {
+                contentStr = responseMessage.content.trim();
+            } else {
+                // If it's an array, join the text parts
+                contentStr = responseMessage.content
+                    .filter(part => part.type === 'text')
+                    .map(part => (part as any).text)
+                    .join('')
+                    .trim();
+            }
+            // Check if the content looks like a JSON tool call that wasn't properly handled
+            try {
+                if (contentStr.startsWith('{"tool_call":')) {
+                    console.log("Detected JSON tool call in content, parsing...", contentStr.substring(0, 100) + "...");
+                    toolCalls = JSON.parse(contentStr);
+                } else {
+                    messageContent = contentStr;
+                }
+            } catch (parseError: any) {
+                // If JSON parsing fails, treat as regular content
+                console.log("Content is not JSON tool call, treating as regular message");
+                messageContent = contentStr;
+            }
+        } else if (responseMessage.tool_calls && responseMessage.tool_calls.length > 0) {
+            toolCalls = responseMessage.tool_calls;
+        }
+
+        if (messageContent) {
+            // Regular content message
+            newHistory.push({
+                type: "llm",
+                content: messageContent,
+            } as LLMMessage);
+            return newHistory;
+        } else if (toolCalls && toolCalls.length > 0) {
+            let isDone = true;
+            for (const toolCall of toolCalls) {
+                const functionName = toolCall.function.name;
+                const args = JSON.parse(toolCall.function.arguments);
+                console.log(functionName, args);
+                try {
                     if (functionName === "messageToUser") {
                         newHistory.push({
                             type: "llm",
                             content: args.message,
                         } as LLMMessage);
                     } else if (functionName === "searchAnki") {
-                        const searchResults = await searchAnki(args.query);
+                        const searchResults = await searchAnki(args.query, toolCall.id || '0');
                         newHistory.push(searchResults);
                         isDone = false;
                     } else if (functionName === "proposeCards") {
                         const cardProposal = await proposeCards(
                             args.cards,
-                            lang
+                            lang,
+                            toolCall.id || '0'
                         );
 
                         newHistory.push(cardProposal);
+                        isDone = !!cardProposal.error && retryCount++ >= 3;
 
-                        if (cardProposal.error) {
-                            isDone = retryCount++ >= 3;
-                        }
                     } else {
                         throw new Error(`Unknown tool call: ${functionName}`);
                     }
@@ -452,88 +542,8 @@ async function callLLMWithRetry(
                 }
             }
             if (isDone) return newHistory;
-        } else if (responseMessage.content) {
-            // Check if the content looks like a JSON tool call that wasn't properly handled
-            try {
-                // Handle both string and array content types
-                let contentStr: string;
-                if (typeof responseMessage.content === 'string') {
-                    contentStr = responseMessage.content.trim();
-                } else {
-                    // If it's an array, join the text parts
-                    contentStr = responseMessage.content
-                        .filter(part => part.type === 'text')
-                        .map(part => (part as any).text)
-                        .join('')
-                        .trim();
-                }
-
-                if (contentStr.startsWith('{"tool_call":') || contentStr.startsWith('{"tool_call":"')) {
-                    console.log("Detected JSON tool call in content, parsing...", contentStr.substring(0, 100) + "...");
-                    const parsedToolCall = JSON.parse(contentStr);
-
-                    if (parsedToolCall.tool_call === "propose_cards" && parsedToolCall.cards) {
-                        console.log("Processing propose_cards from content");
-                        const cardProposal = await proposeCards(
-                            parsedToolCall.cards,
-                            lang
-                        );
-                        newHistory.push(cardProposal);
-
-                        if (cardProposal.error) {
-                            if (retryCount++ >= 3) {
-                                return newHistory;
-                            }
-                            // Continue the loop to retry
-                        } else {
-                            return newHistory;
-                        }
-                    } else if (parsedToolCall.tool_call === "searchAnki" && parsedToolCall.query) {
-                        console.log("Processing searchAnki from content");
-                        const searchResults = await searchAnki(parsedToolCall.query);
-                        newHistory.push(searchResults);
-                        // Continue the loop for more interaction
-                    } else if (parsedToolCall.tool_call === "anki_search" && parsedToolCall.query) {
-                        console.log("Processing anki_search from content");
-                        const searchResults = await searchAnki(parsedToolCall.query);
-                        newHistory.push(searchResults);
-                        // Continue the loop for more interaction
-                    } else if (parsedToolCall.tool_call === "messageToUser" && parsedToolCall.message) {
-                        console.log("Processing messageToUser from content");
-                        newHistory.push({
-                            type: "llm",
-                            content: parsedToolCall.message,
-                        } as LLMMessage);
-                        return newHistory;
-                    } else {
-                        console.log("Unknown tool call structure:", parsedToolCall);
-                        throw new Error(`Unknown tool call in content: ${parsedToolCall.tool_call}`);
-                    }
-                } else {
-                    // Regular content message
-                    newHistory.push({
-                        type: "llm",
-                        content: contentStr,
-                    } as LLMMessage);
-                    return newHistory;
-                }
-            } catch (parseError: any) {
-                // If JSON parsing fails, treat as regular content
-                console.log("Content is not JSON tool call, treating as regular message");
-                const contentStr = typeof responseMessage.content === 'string'
-                    ? responseMessage.content
-                    : responseMessage.content
-                        .filter(part => part.type === 'text')
-                        .map(part => (part as any).text)
-                        .join('');
-                newHistory.push({
-                    type: "llm",
-                    content: contentStr,
-                } as LLMMessage);
-                return newHistory;
-            }
         } else {
-            throw new Error("No response received from LLM");
+            return newHistory;
         }
     }
 

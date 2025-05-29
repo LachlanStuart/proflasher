@@ -234,7 +234,7 @@ export function RowOrientedCardEditor({
             {/* Tables */}
             {tableDefinitions.map((tableDef) => {
                 const tableData = card.tables[tableDef.name] || {};
-                const rowNames = Object.keys(tableData);
+                const rowNames = sortRowNames(Object.keys(tableData), tableDef.rowDescriptions);
 
                 return (
                     <div key={tableDef.name}>
@@ -265,7 +265,7 @@ export function RowOrientedCardEditor({
                                             <th className="px-2 text-center text-sm font-medium text-gray-700 border-r w-20">
                                                 Actions
                                             </th>
-                                            <th className="px-2 text-left text-sm font-medium text-gray-700 border-r" style={{ width: '80px' }}>
+                                            <th className="px-2 text-left text-sm font-medium text-gray-700 border-r" style={{ width: '88px' }}>
                                                 Row
                                             </th>
                                             {tableDef.columns.map((column) => (
@@ -305,7 +305,7 @@ export function RowOrientedCardEditor({
                                                         </button>
                                                     </div>
                                                 </td>
-                                                <td className="px-2 text-sm border-r bg-gray-50 min-w-0" style={{ width: '80px' }}>
+                                                <td className="px-2 text-sm border-r bg-gray-50 min-w-0" style={{ width: '88px' }}>
                                                     <input
                                                         type="text"
                                                         value={rowName}

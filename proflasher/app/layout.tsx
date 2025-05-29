@@ -23,7 +23,7 @@ export default function RootLayout({
                         <div className="h-16 flex-shrink-0">
                             <Header />
                         </div>
-                        <main className="flex-grow overflow-hidden p-4 flex justify-center">
+                        <main className="flex-grow overflow-y-auto p-4 flex justify-center">
                             <div className="w-full max-w-6xl">
                                 {children}
                             </div>

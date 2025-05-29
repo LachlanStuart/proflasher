@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { Anki } from "~/lib/ankiConnect";
-import { loadTemplates, type Templates } from "~/lib/cardModel/noteTemplates";
+import { loadTemplates, type Templates, validateNote } from "~/lib/cardModel/noteTemplates";
+import { rowToColumnOriented, type RowOrientedCard } from "~/lib/cardModel/tableCard";
 import { env } from "~/lib/env";
 
 // Cache templates in memory to avoid reading from disk on every request
@@ -14,7 +15,8 @@ async function getTemplates(): Promise<Templates> {
 
 interface CardOperation {
     modelName: string;
-    fields: Record<string, string>;
+    fields?: Record<string, string>; // For direct field updates
+    card?: RowOrientedCard; // For LLM-generated cards
     activeCardTypes?: string[];
     update?: boolean;
     noteId?: number;
@@ -22,11 +24,11 @@ interface CardOperation {
 
 export async function POST(request: NextRequest) {
     try {
-        const { modelName, fields, activeCardTypes, update, noteId }: CardOperation = await request.json();
+        const { modelName, fields, card, activeCardTypes, update, noteId }: CardOperation = await request.json();
 
-        if (!modelName || !fields) {
+        if (!modelName || (!fields && !card)) {
             return NextResponse.json(
-                { error: "Missing required fields: modelName and fields" },
+                { error: "Missing required fields: modelName and either fields or card" },
                 { status: 400 }
             );
         }
@@ -41,6 +43,39 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        // Prepare final fields for Anki
+        let finalFields: Record<string, string>;
+
+        if (card) {
+            // Convert row-oriented card to column-oriented for Anki
+            const columnCard = rowToColumnOriented(card, template.tableDefinitions);
+
+            // Validate the converted card
+            const { isValid, error } = await validateNote(template.noteType, columnCard, templates);
+            if (!isValid) {
+                return NextResponse.json(
+                    { error: `Invalid card fields: ${error}` },
+                    { status: 400 }
+                );
+            }
+
+            // Fill missing fields with empty strings
+            finalFields = { ...columnCard };
+            for (const field of Object.keys(template.fieldDescriptions)) {
+                if (!finalFields[field]) {
+                    finalFields[field] = "";
+                }
+            }
+        } else if (fields) {
+            // Use fields directly (already in column format)
+            finalFields = fields;
+        } else {
+            return NextResponse.json(
+                { error: "Either fields or card must be provided" },
+                { status: 400 }
+            );
+        }
+
         // Get deck name based on language
         const deckName = `Lang::${template.language.toUpperCase()}`;
 
@@ -49,14 +84,14 @@ export async function POST(request: NextRequest) {
 
         if (update && noteId) {
             // Update existing note
-            result = await Anki.updateNoteFields(noteId, fields);
+            result = await Anki.updateNoteFields(noteId, finalFields);
             // Get card IDs for the updated note
             const cards = await Anki.findCards(`nid:${noteId}`);
             cardIds = cards;
         } else {
             try {
                 // Add new note
-                result = await Anki.addNote({ deckName, modelName, fields });
+                result = await Anki.addNote({ deckName, modelName, fields: finalFields });
                 // Get card IDs for the new note
                 const cards = await Anki.findCards(`nid:${result}`);
                 cardIds = cards;
@@ -64,12 +99,12 @@ export async function POST(request: NextRequest) {
                 // Check if it's a duplicate error
                 if (error instanceof Error && error.message.includes("duplicate")) {
                     // Search for the existing note using the Key field
-                    const existingNotes = await Anki.findNotes(`"Key:${fields.Key}" note:${modelName}`);
+                    const existingNotes = await Anki.findNotes(`"Key:${finalFields.Key}" note:${modelName}`);
                     if (existingNotes.length > 0) {
                         return NextResponse.json({
                             error: "duplicate",
                             noteId: existingNotes[0],
-                            fields
+                            fields: finalFields
                         }, { status: 409 }); // 409 Conflict
                     }
                 }

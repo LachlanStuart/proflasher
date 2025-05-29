@@ -1,0 +1,6 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+When you are finished with a task, don't try to build/run it. Just point me at what I should check. I already have the dev server running.

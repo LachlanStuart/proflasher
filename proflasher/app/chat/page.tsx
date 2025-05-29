@@ -8,6 +8,7 @@ import { ErrorMessage } from "~/components/chat/ErrorMessage";
 import { LLMMessage } from "~/components/chat/LLMMessage";
 import { UserMessage } from "~/components/chat/UserMessage";
 import { useFlashcard } from "~/lib/context/FlashcardContext";
+import type { RowOrientedCard } from "~/lib/cardModel/tableCard";
 
 // LLM model name
 const LLM_MODEL_NAME = "gemini-2.5-flash-preview-04-17";
@@ -45,7 +46,7 @@ interface AnkiSearchMessageType {
 
 interface CardProposalMessageType {
     type: "card_proposal";
-    cards: Array<Record<string, string>>;
+    cards: RowOrientedCard[];
     error?: string;
 }
 
