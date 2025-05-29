@@ -102,7 +102,7 @@ If you use this, make sure to limit the note type specific to the current langua
                 properties: {
                     cards: {
                         type: "array",
-                        description: "Array of card objects using table structure",
+                        description: "Array of card objects",
                         items: {
                             type: "object",
                             properties: {
@@ -237,10 +237,21 @@ async function buildSystemInstructions(lang: string): Promise<string> {
     // Add table format information
     systemPrompt += "\n\n" + generateTablePrompt(template);
 
-    // Add field descriptions
-    systemPrompt += "\n\n## Field Descriptions\n\n";
-    for (const [field, description] of Object.entries(template.fieldDescriptions)) {
-        systemPrompt += `- **${field}**: ${description}\n`;
+    // Add field descriptions for non-table fields only
+    const tableColumns = new Set<string>();
+    for (const tableDef of template.tableDefinitions) {
+        tableDef.columns.forEach(col => tableColumns.add(col));
+    }
+
+    const nonTableFields = Object.entries(template.fieldDescriptions).filter(([field]) =>
+        !tableColumns.has(field)
+    );
+
+    if (nonTableFields.length > 0) {
+        systemPrompt += "\n\n## Non-Table Fields\n\n";
+        for (const [field, description] of nonTableFields) {
+            systemPrompt += `- **${field}**: ${description}\n`;
+        }
     }
 
     // Add required fields information
@@ -251,12 +262,6 @@ async function buildSystemInstructions(lang: string): Promise<string> {
     for (const [type, description] of Object.entries(template.cardDescriptions)) {
         systemPrompt += `- **${type}**: ${description}\n`;
     }
-
-    systemPrompt += "\n\n## Instructions\n\n";
-    systemPrompt += "- Use the table format for better clarity and easier editing\n";
-    systemPrompt += "- Focus on one row at a time when explaining or modifying cards\n";
-    systemPrompt += "- Ensure each row contains related, complete information\n";
-    systemPrompt += "- Use meaningful row names that reflect the content type\n";
 
     return systemPrompt;
 }
@@ -388,8 +393,8 @@ async function callLLMWithRetry(
             } else {
                 throw new Error("No response received from LLM");
             }
-            console.log('Request:', messages);
-            console.log('Response:', responseMessage);
+            console.log("Request:", messages);
+            console.log("Response:", responseMessage);
 
         } catch (error: any) {
             console.error("Error calling LLM:", error);
@@ -448,11 +453,85 @@ async function callLLMWithRetry(
             }
             if (isDone) return newHistory;
         } else if (responseMessage.content) {
-            newHistory.push({
-                type: "llm",
-                content: responseMessage.content,
-            } as LLMMessage);
-            return newHistory;
+            // Check if the content looks like a JSON tool call that wasn't properly handled
+            try {
+                // Handle both string and array content types
+                let contentStr: string;
+                if (typeof responseMessage.content === 'string') {
+                    contentStr = responseMessage.content.trim();
+                } else {
+                    // If it's an array, join the text parts
+                    contentStr = responseMessage.content
+                        .filter(part => part.type === 'text')
+                        .map(part => (part as any).text)
+                        .join('')
+                        .trim();
+                }
+
+                if (contentStr.startsWith('{"tool_call":') || contentStr.startsWith('{"tool_call":"')) {
+                    console.log("Detected JSON tool call in content, parsing...", contentStr.substring(0, 100) + "...");
+                    const parsedToolCall = JSON.parse(contentStr);
+
+                    if (parsedToolCall.tool_call === "propose_cards" && parsedToolCall.cards) {
+                        console.log("Processing propose_cards from content");
+                        const cardProposal = await proposeCards(
+                            parsedToolCall.cards,
+                            lang
+                        );
+                        newHistory.push(cardProposal);
+
+                        if (cardProposal.error) {
+                            if (retryCount++ >= 3) {
+                                return newHistory;
+                            }
+                            // Continue the loop to retry
+                        } else {
+                            return newHistory;
+                        }
+                    } else if (parsedToolCall.tool_call === "searchAnki" && parsedToolCall.query) {
+                        console.log("Processing searchAnki from content");
+                        const searchResults = await searchAnki(parsedToolCall.query);
+                        newHistory.push(searchResults);
+                        // Continue the loop for more interaction
+                    } else if (parsedToolCall.tool_call === "anki_search" && parsedToolCall.query) {
+                        console.log("Processing anki_search from content");
+                        const searchResults = await searchAnki(parsedToolCall.query);
+                        newHistory.push(searchResults);
+                        // Continue the loop for more interaction
+                    } else if (parsedToolCall.tool_call === "messageToUser" && parsedToolCall.message) {
+                        console.log("Processing messageToUser from content");
+                        newHistory.push({
+                            type: "llm",
+                            content: parsedToolCall.message,
+                        } as LLMMessage);
+                        return newHistory;
+                    } else {
+                        console.log("Unknown tool call structure:", parsedToolCall);
+                        throw new Error(`Unknown tool call in content: ${parsedToolCall.tool_call}`);
+                    }
+                } else {
+                    // Regular content message
+                    newHistory.push({
+                        type: "llm",
+                        content: contentStr,
+                    } as LLMMessage);
+                    return newHistory;
+                }
+            } catch (parseError: any) {
+                // If JSON parsing fails, treat as regular content
+                console.log("Content is not JSON tool call, treating as regular message");
+                const contentStr = typeof responseMessage.content === 'string'
+                    ? responseMessage.content
+                    : responseMessage.content
+                        .filter(part => part.type === 'text')
+                        .map(part => (part as any).text)
+                        .join('');
+                newHistory.push({
+                    type: "llm",
+                    content: contentStr,
+                } as LLMMessage);
+                return newHistory;
+            }
         } else {
             throw new Error("No response received from LLM");
         }

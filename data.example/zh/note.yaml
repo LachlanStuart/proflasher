@@ -3,10 +3,6 @@ language: zh
 deckName: Lang::ZH
 fieldDescriptions:
   Key: Primary key for the card. Use the dictionary form of the word/phrase. If there is a reported clash, search for it and choose to either update the existing card or create a new card with a suffixed key.
-  ZH: (Semicolon-separated list)
-  Hant: (Semicolon-separated list aligned to ZH)
-  Pinyin: (Semicolon-separated list aligned to ZH)
-  EN: (Semicolon-separated list aligned to ZH)
   HasHant: Whether the word/phrase has a different traditional form to its simplified form. Set to "Y" if so, leave blank if not.
   Mnemonic: Leave blank for normal words that have English equivalents. Otherwise specify how their usage differs to English. When using Chinese characters, also include their pinyin readings in parentheses.
   Related: Related words (if any). Include Chinese, Pinyin and English for each, e.g. '猫 (māo) cat, 狗 (gǒu) dog'
@@ -26,6 +22,11 @@ tableDefinitions:
   - name: main
     description: Main vocabulary with word and example sentences
     columns: [ZH, Hant, Pinyin, EN]
+    columnDescriptions:
+      ZH: Simplified Chinese characters
+      Hant: Traditional Chinese characters
+      Pinyin: Pinyin romanization with tone marks
+      EN: English translation or equivalent
     rowDescriptions:
       Word: Dictionary form of the word/phrase
       Sentence1: First example sentence showing usage

@@ -6,6 +6,7 @@ export type TableDefinition = {
     name: string;
     description: string;
     columns: string[]; // e.g. ["EN", "JP"] or ["FR", "EN"]
+    columnDescriptions?: Record<string, string>; // e.g. {"FR": "French text", "EN": "English translation"}
     rowDescriptions: Record<string, string>; // e.g. {"Word": "Dictionary form", "Sentence1": "Example sentence"}
 };
 

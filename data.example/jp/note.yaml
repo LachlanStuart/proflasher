@@ -3,9 +3,6 @@ language: jp
 deckName: Lang::JP
 fieldDescriptions:
   Key: Primary key for the card. Use the dictionary form of the word/phrase. If there is a reported clash, search for it and choose to either update the existing card or create a new card with a suffixed key.
-  JP: (Semicolon-separated list)
-  Kana: (Semicolon-separated list aligned to JP)
-  EN: (Semicolon-separated list aligned to JP)
   Mnemonic: Leave blank for normal words that have English equivalents. Otherwise specify how their usage differs to English.
   Related: Related words (if any). Include Japanese, Kana and English for each, e.g. '猫 (ねこ) cat, 犬 (いぬ) dog'
 
@@ -23,6 +20,10 @@ tableDefinitions:
   - name: main
     description: Main vocabulary with word and example sentences
     columns: [JP, Kana, EN]
+    columnDescriptions:
+      JP: Japanese text (kanji, hiragana, katakana)
+      Kana: Kana reading (hiragana or katakana)
+      EN: English translation or equivalent
     rowDescriptions:
       Word: Dictionary form of the word/phrase
       Sentence1: First example sentence showing usage

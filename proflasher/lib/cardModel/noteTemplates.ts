@@ -94,10 +94,47 @@ function generateTableDefinitionsFromFieldGroups(
             description = 'Main vocabulary items';
         }
 
+        // Generate column descriptions based on common patterns
+        const columnDescriptions: Record<string, string> = {};
+        for (const column of group) {
+            if (column === 'EN') {
+                columnDescriptions[column] = 'English translation or equivalent';
+            } else if (column.includes('EN')) {
+                columnDescriptions[column] = 'English descriptions or translations';
+            } else if (column === 'FR') {
+                columnDescriptions[column] = 'French text (words, phrases, or sentences)';
+            } else if (column.includes('FR')) {
+                columnDescriptions[column] = 'French conjugations, declensions, or forms';
+            } else if (column === 'DE') {
+                columnDescriptions[column] = 'German text (words, phrases, or sentences)';
+            } else if (column === 'ZH') {
+                columnDescriptions[column] = 'Simplified Chinese characters';
+            } else if (column === 'Hant') {
+                columnDescriptions[column] = 'Traditional Chinese characters';
+            } else if (column === 'Pinyin') {
+                columnDescriptions[column] = 'Pinyin romanization with tone marks';
+            } else if (column === 'JP') {
+                columnDescriptions[column] = 'Japanese text (kanji, hiragana, katakana)';
+            } else if (column === 'Kana') {
+                columnDescriptions[column] = 'Kana reading (hiragana or katakana)';
+            } else {
+                // Fallback based on field language
+                const lang = fieldLangs[column];
+                if (lang === 'en') {
+                    columnDescriptions[column] = 'English content';
+                } else if (lang) {
+                    columnDescriptions[column] = `${lang.toUpperCase()} content`;
+                } else {
+                    columnDescriptions[column] = `${column} content`;
+                }
+            }
+        }
+
         return {
             name: tableName,
             description,
             columns: group,
+            columnDescriptions,
             rowDescriptions: {
                 'Word': 'Dictionary form of the word/phrase',
                 'Sentence1': 'Primary example sentence',
@@ -197,8 +234,13 @@ export async function validateNote(
             errors.push(`Missing required table data for columns: ${missingTableFields.join(", ")}. Make sure your tables contain data for these columns.`);
         }
 
-        // Get all valid fields (existing fields + row order fields)
+        // Get all valid fields (existing fields + table columns + row order fields)
         const validFields = new Set(Object.keys(template.fieldDescriptions));
+
+        // Add table columns as valid fields
+        for (const tableDef of template.tableDefinitions) {
+            tableDef.columns.forEach(col => validFields.add(col));
+        }
 
         // Add row order fields as valid
         for (const tableDef of template.tableDefinitions) {

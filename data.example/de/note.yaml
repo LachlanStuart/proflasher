@@ -3,8 +3,6 @@ language: de
 deckName: Lang::DE
 fieldDescriptions:
   Key: Primary key for the card. Use the dictionary form of the word/phrase. If there is a reported clash, search for it and choose to either update the existing card or create a new card with a suffixed key.
-  DE: (Semicolon-separated list)
-  EN: (Semicolon-separated list)
   Mnemonic: Leave blank for normal words that have English equivalents. Otherwise specify how their usage differs to English.
   Related: Related words (if any). Include German and English, e.g. 'die Katze (the cat); das Meerschweinchen (the hamster)'
 
@@ -21,6 +19,9 @@ tableDefinitions:
   - name: main
     description: Main vocabulary with word and example sentences
     columns: [DE, EN]
+    columnDescriptions:
+      DE: German text (words, phrases, or sentences)
+      EN: English translation or equivalent
     rowDescriptions:
       Word: Dictionary form of the word/phrase
       Sentence1: First example sentence showing usage

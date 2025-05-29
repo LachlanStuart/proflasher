@@ -3,14 +3,8 @@ language: fr
 deckName: Lang::FR
 fieldDescriptions:
   Key: Primary key for the card. Use the dictionary form of the French word/phrase. If applicable and not overridden by the user, choose the masculine/singular/infinitive form. Suffix with (m) or (f) if applicable.
-  FR: (Semicolon-separated list)
-  EN: (Semicolon-separated list aligned to FR)
   Mnemonic: Leave blank for normal words that have English equivalents. Otherwise specify how their usage differs to English.
   Related: Related words (if any). Include French and English, e.g. 'le chat (the cat); le chaton (the kitten)'
-  ExtraFR: (Semicolon-separated list)
-  ExtraEN: (Semicolon-separated list aligned to ExtraFR)
-  RowOrder: (Semicolon-separated list of row names for the main table)
-  ExtraRowOrder: (Semicolon-separated list of row names for the extra table)
 
 requiredFields: [Key, FR, EN]
 
@@ -28,8 +22,11 @@ tableDefinitions:
   - name: main
     description: Main vocabulary with word and example sentences.
     columns: [FR, EN]
+    columnDescriptions:
+      FR: French text (words, phrases, or sentences)
+      EN: English translation or equivalent
     rowDescriptions:
-      Word: Dictionary form of the word/phrase. Masculine singular form for nouns.
+      Word: Dictionary form of the word/phrase. Only use the masculine singular form for nouns. Do not include a suffix in the EN field.
       WordFS: (Nouns only) Feminine singular form.
       WordMP: (Nouns only) Masculine plural form.
       WordFP: (Nouns only) Feminine plural form.
@@ -37,10 +34,13 @@ tableDefinitions:
       Sentence2: Second example sentence for context
       Sentence3: Third example sentence for variety
   - name: extra
-    description: Optional conjugations or declinations based on word type.
+    description: Optional conjugations for verbs or declinations for adjectives. Leave this empty for other word types.
     columns: [ExtraFR, ExtraEN]
+    columnDescriptions:
+      ExtraFR: French conjugations or declensions
+      ExtraEN: English descriptions or translations of the forms
     rowDescriptions:
-      Dict: Infinitive form for verbs e.g. 'faire/to do', dictionary form for all other word types
+      Dict: Infinitive form for verbs e.g. 'faire/to do', dictionary form for adjectives.
       1S: (verbs only) First-person singular present form e.g. 'je fais/I do'
       2S: (verbs only) Second-person singular present form e.g. 'tu fais/you do'
       3S: (verbs only) Third-person singular present form e.g. 'il fait/he does'
