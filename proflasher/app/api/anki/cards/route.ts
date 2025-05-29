@@ -7,7 +7,7 @@ import { env } from "~/lib/env";
 let templatesCache: Templates | null = null;
 async function getTemplates(): Promise<Templates> {
     if (!templatesCache) {
-        templatesCache = await loadTemplates(env.DATA_REPO_PATH);
+        templatesCache = await loadTemplates();
     }
     return templatesCache;
 }

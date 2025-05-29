@@ -1,7 +1,7 @@
 'use client';
 
 import { type ReactNode, createContext, useContext, useEffect, useMemo, useState } from 'react';
-import type { NoteTemplate, Templates } from '../cardModel/noteTemplates';
+import type { ProcessedNoteTemplate, Templates } from '../cardModel/noteTemplates';
 
 interface FlashcardContextType {
     language: string;
@@ -9,7 +9,7 @@ interface FlashcardContextType {
     activeCardTypes: string[];
     setActiveCardTypes: (types: string[]) => void;
     availableLanguages: string[];
-    template: NoteTemplate;
+    template: ProcessedNoteTemplate;
     templates: Templates;
 }
 

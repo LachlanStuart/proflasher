@@ -12,7 +12,7 @@ interface Params {
 // GET handler to read a config file
 export async function GET(
     request: NextRequest,
-    { params }: { params: Params },
+    { params }: { params: Promise<Params> },
 ) {
     // Use await here to ensure params are fully resolved
     const { lang, configFile } = await Promise.resolve(params);
@@ -38,7 +38,7 @@ export async function GET(
 // POST handler to write to a config file
 export async function POST(
     request: NextRequest,
-    { params }: { params: Params },
+    { params }: { params: Promise<Params> },
 ) {
     // Use await here to ensure params are fully resolved
     const { lang, configFile } = await Promise.resolve(params);

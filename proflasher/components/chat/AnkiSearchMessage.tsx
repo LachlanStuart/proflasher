@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
-import type { AnkiSearchMessage as AnkiSearchMessageType } from "~/app/chat/page";
+
+interface AnkiSearchMessageType {
+    type: "anki_search";
+    query: string;
+    results: Array<Record<string, any>>;
+    error?: string;
+}
 
 interface AnkiSearchMessageProps {
     message: AnkiSearchMessageType;
@@ -43,7 +49,7 @@ export function AnkiSearchMessage({ message }: AnkiSearchMessageProps) {
 
                     {resultsToDisplay.length > 0 && (
                         <div className="mt-2 border-gray-300 border-t pt-2">
-                            {resultsToDisplay.map((result, index) => (
+                            {resultsToDisplay.map((result: any, index: number) => (
                                 <div
                                     key={result.id || index}
                                     className="mb-2 border-gray-200 border-b pb-2 last:border-b-0"
@@ -59,10 +65,10 @@ export function AnkiSearchMessage({ message }: AnkiSearchMessageProps) {
                                     <div className="mt-1">
                                         {Object.entries(result.fields || {})
                                             .slice(0, MAX_PREVIEW_FIELDS)
-                                            .map(([field, value]) => (
+                                            .map(([field, value]: [string, any]) => (
                                                 <div key={field} className="text-xs">
                                                     <span className="font-bold">{field}:</span>{" "}
-                                                    {truncateValue(value)}
+                                                    {truncateValue(String(value))}
                                                 </div>
                                             ))}
 
