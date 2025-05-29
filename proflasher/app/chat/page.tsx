@@ -21,40 +21,40 @@ interface DuplicateCardData {
 }
 
 // Message types for conversation history
-interface UserMessage {
+interface UserMessageType {
     type: "user";
     content: string;
 }
 
-interface LLMMessage {
+interface LLMMessageType {
     type: "llm";
     content: string;
 }
 
-interface ErrorMessage {
+interface ErrorMessageType {
     type: "error";
     content: string;
 }
 
-interface AnkiSearchMessage {
+interface AnkiSearchMessageType {
     type: "anki_search";
     query: string;
     results: Array<Record<string, any>>;
     error?: string;
 }
 
-interface CardProposalMessage {
+interface CardProposalMessageType {
     type: "card_proposal";
     cards: Array<Record<string, string>>;
     error?: string;
 }
 
 type ConversationMessage =
-    | UserMessage
-    | LLMMessage
-    | ErrorMessage
-    | AnkiSearchMessage
-    | CardProposalMessage
+    | UserMessageType
+    | LLMMessageType
+    | ErrorMessageType
+    | AnkiSearchMessageType
+    | CardProposalMessageType
     | DuplicateCardData;
 
 // Component for duplicate card message
@@ -122,8 +122,8 @@ export default function ChatPage() {
                 // Return conversation with an error message
                 return [
                     ...conversationHistory,
-                    { type: "user", content: userPrompt } as UserMessage,
-                    { type: "error", content: errorMessage } as ErrorMessage,
+                    { type: "user", content: userPrompt } as UserMessageType,
+                    { type: "error", content: errorMessage } as ErrorMessageType,
                 ];
             }
 
@@ -136,8 +136,8 @@ export default function ChatPage() {
             // Return the conversation with an error message
             return [
                 ...conversationHistory,
-                { type: "user", content: userPrompt } as UserMessage,
-                { type: "error", content: `Error: ${errorMessage}` } as ErrorMessage,
+                { type: "user", content: userPrompt } as UserMessageType,
+                { type: "error", content: `Error: ${errorMessage}` } as ErrorMessageType,
             ];
         }
     }
@@ -183,6 +183,17 @@ export default function ChatPage() {
     // Handle clear conversation
     const handleClear = () => {
         setMessages([]);
+    };
+
+    // Handle rewind to a specific message
+    const handleRewind = (index: number) => {
+        const messageToRewind = messages[index];
+        if (messageToRewind && messageToRewind.type === "user") {
+            // Put the message content back in the input
+            setInputText((messageToRewind as UserMessageType).content);
+            // Truncate conversation history to remove this message and everything after it
+            setMessages(messages.slice(0, index));
+        }
     };
 
     // Handle showing note in Anki
@@ -327,7 +338,7 @@ export default function ChatPage() {
                     messages.map((message, index) => {
                         switch (message.type) {
                             case "user":
-                                return <UserMessage key={index} message={message} />;
+                                return <UserMessage key={index} message={message} onRewind={() => handleRewind(index)} />;
                             case "llm":
                                 return <LLMMessage key={index} message={message} />;
                             case "error":
