@@ -41,6 +41,8 @@ interface CardProposalMessage {
     type: "card_proposal";
     cards: Array<Record<string, string>>;
     error?: string;
+    beforeCardsMessageToUser?: string;
+    afterCardsMessageToUser?: string;
 }
 
 type ConversationMessage =
@@ -81,16 +83,30 @@ If you use this, make sure to limit the note type specific to the current langua
             parameters: {
                 type: "object",
                 properties: {
+                    beforeCardsMessageToUser: {
+                        type: "string",
+                        description: "Optional message to display to the user before showing the card proposals",
+                    },
                     cards: {
                         type: "array",
                         description:
                             "Array of card objects with fields matching the template",
                         items: {
                             type: "object",
+                            properties: {
+                                cardThinking: {
+                                    type: "string",
+                                    description: "Optional thinking process for this card before providing fields. Use this for trying several translation combinations to ensure unambiguity in both directions. Not shown to user.",
+                                },
+                            },
                             additionalProperties: {
                                 type: "string",
                             },
                         },
+                    },
+                    afterCardsMessageToUser: {
+                        type: "string",
+                        description: "Optional message to display to the user after showing the card proposals",
                     },
                 },
                 required: ["cards"],
@@ -155,13 +171,25 @@ async function searchAnki(query: string): Promise<AnkiSearchMessage> {
 async function proposeCards(
     cards: Array<Record<string, string>>,
     lang: string,
+    beforeCardsMessageToUser?: string,
+    afterCardsMessageToUser?: string,
 ): Promise<CardProposalMessage> {
     const templates = await getTemplates();
     const template = templates[lang];
     if (!template) throw new Error(`Template for language ${lang} not found`);
 
+    // Log cardThinking for debugging and clean it from the cards
+    const cleanedCards = cards.map((card, index) => {
+        const cleanedCard = { ...card };
+        if (cleanedCard.cardThinking) {
+            console.log(`Card #${index + 1} Key: ${cleanedCard.Key || 'N/A'}, Thinking:`, cleanedCard.cardThinking);
+            delete cleanedCard.cardThinking;
+        }
+        return cleanedCard;
+    });
+
     // Validate cards
-    const invalidCards = await Promise.all(cards.map(async (card, index) => {
+    const invalidCards = await Promise.all(cleanedCards.map(async (card, index) => {
         const { isValid, error } = await validateNote(template.noteType, card, templates);
         return isValid ? [] : [`Card #${index + 1} has invalid fields: ${error}`];
     }));
@@ -171,13 +199,15 @@ async function proposeCards(
         console.error("Invalid cards detected:", allInvalidCards);
         return {
             type: "card_proposal",
-            cards,
+            cards: cleanedCards,
             error: `Invalid cards detected:\n${allInvalidCards.join("\n")}`,
+            beforeCardsMessageToUser,
+            afterCardsMessageToUser,
         };
     }
 
     // Fill null fields with empty strings
-    for (const card of cards) {
+    for (const card of cleanedCards) {
         for (const field of Object.keys(template.fieldDescriptions)) {
             if (!card[field]) {
                 card[field] = "";
@@ -187,7 +217,9 @@ async function proposeCards(
 
     return {
         type: "card_proposal",
-        cards: cards,
+        cards: cleanedCards,
+        beforeCardsMessageToUser,
+        afterCardsMessageToUser,
     };
 }
 
@@ -233,6 +265,8 @@ function formatConversationHistory(
                         tool_call: "propose_cards",
                         cards: message.cards,
                         ...(message.error && { error: message.error }),
+                        ...(message.beforeCardsMessageToUser && { beforeCardsMessageToUser: message.beforeCardsMessageToUser }),
+                        ...(message.afterCardsMessageToUser && { afterCardsMessageToUser: message.afterCardsMessageToUser }),
                     }),
                 };
             default:
@@ -357,8 +391,31 @@ async function callLLMWithRetry(
                         newHistory.push(searchResults);
                         isDone = false;
                     } else if (functionName === "proposeCards") {
-                        const cardProposal = await proposeCards(args.cards, lang);
+                        const cardProposal = await proposeCards(
+                            args.cards,
+                            lang,
+                            args.beforeCardsMessageToUser,
+                            args.afterCardsMessageToUser
+                        );
+
+                        // Add beforeCardsMessageToUser if provided
+                        if (cardProposal.beforeCardsMessageToUser) {
+                            newHistory.push({
+                                type: "llm",
+                                content: cardProposal.beforeCardsMessageToUser,
+                            } as LLMMessage);
+                        }
+
                         newHistory.push(cardProposal);
+
+                        // Add afterCardsMessageToUser if provided
+                        if (cardProposal.afterCardsMessageToUser) {
+                            newHistory.push({
+                                type: "llm",
+                                content: cardProposal.afterCardsMessageToUser,
+                            } as LLMMessage);
+                        }
+
                         if (cardProposal.error) {
                             isDone = false;
                         }
