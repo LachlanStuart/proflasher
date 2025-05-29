@@ -48,14 +48,14 @@ export function generateCardFormatExample(template: ProcessedNoteTemplate): stri
     example += "```json\n{\n";
 
     // Non-table fields
-    const nonTableFields = Object.keys(template.fieldDescriptions).filter(field =>
+    const nonTableFields = Object.entries(template.fieldDescriptions).filter(([field, description]) =>
         !template.tableDefinitions.some(table => table.columns.includes(field))
     );
 
     if (nonTableFields.length > 0) {
         example += '  "fields": {\n';
-        for (const field of nonTableFields) {
-            example += `    "${field}": "..."\n`;
+        for (const [field, description] of nonTableFields) {
+            example += `    "${field}": "...", // ${description}\n`;
         }
         example += '  },\n';
     }
@@ -70,9 +70,6 @@ export function generateCardFormatExample(template: ProcessedNoteTemplate): stri
 
         // Show example rows based on the table's row descriptions
         const rowNames = Object.keys(table.rowDescriptions).slice(0, 2); // Show first 2 row types
-        if (rowNames.length === 0) {
-            rowNames.push('Word', 'Sentence1'); // fallback
-        }
 
         for (let j = 0; j < rowNames.length; j++) {
             const rowName = rowNames[j]!;
@@ -139,9 +136,11 @@ export function generateTablePrompt(template: ProcessedNoteTemplate): string {
 
     prompt += "## Important Notes\n\n";
     prompt += "- Always use the table JSON format shown above\n";
+    prompt += "- Think before populating each row if you need to\n";
     prompt += "- Each table row should be self-contained and meaningful\n";
     prompt += "- Don't leave empty rows - only include rows with actual content\n";
-    prompt += "- When updating cards, specify which specific rows/cells to modify\n";
+    prompt += "- If creating cards, call `proposeCards` immediately. Don't speak before calling it.";
+    prompt += " It has arguments in case you need to add a message.\n";
 
     return prompt;
 }

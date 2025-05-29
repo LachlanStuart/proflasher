@@ -192,25 +192,41 @@ export function RowOrientedCardEditor({
                 <div>
                     <h3 className="font-semibold mb-2 text-gray-700">Card Fields</h3>
                     <div className="grid gap-2">
-                        {Object.entries(card.fields).map(([field, value]) => (
-                            <div key={field} className="flex flex-wrap items-center gap-3 min-w-0">
-                                <label className="font-medium text-gray-600 text-sm min-w-20 flex-shrink-0">
-                                    {field}:
-                                </label>
-                                <textarea
-                                    ref={(el) => {
-                                        textareaRefs.current[`field-${field}`] = el;
-                                    }}
-                                    value={value}
-                                    onChange={(e) => handleFieldChange(field, e.target.value)}
-                                    className="overflow-hidden rounded border border-gray-300 p-1 text-sm flex-1 min-w-0"
-                                    style={{ minWidth: '50%' }}
-                                    onInput={(e) => resizeTextarea(e.target as HTMLTextAreaElement)}
-                                    rows={1}
-                                    placeholder={`Enter ${field}...`}
-                                />
-                            </div>
-                        ))}
+                        {(() => {
+                            // Sort field entries based on the order in tableDefinitions field descriptions
+                            const allFieldDescriptions = new Set<string>();
+
+                            // Collect all field descriptions to establish order
+                            tableDefinitions.forEach(tableDef => {
+                                Object.keys(tableDef.rowDescriptions || {}).forEach(field => allFieldDescriptions.add(field));
+                            });
+
+                            // Get common field order: Key first, then others alphabetically, Mnemonic and Related last
+                            const fieldOrder = ['Key', ...Object.keys(card.fields).filter(f => !['Key', 'Mnemonic', 'Related'].includes(f)).sort(), 'Mnemonic', 'Related'];
+
+                            // Filter to only fields that actually exist and maintain order
+                            const orderedFields = fieldOrder.filter(field => card.fields.hasOwnProperty(field));
+
+                            return orderedFields.map(field => (
+                                <div key={field} className="flex flex-wrap items-center gap-3 min-w-0">
+                                    <label className="font-medium text-gray-600 text-sm min-w-20 flex-shrink-0">
+                                        {field}:
+                                    </label>
+                                    <textarea
+                                        ref={(el) => {
+                                            textareaRefs.current[`field-${field}`] = el;
+                                        }}
+                                        value={card.fields[field]}
+                                        onChange={(e) => handleFieldChange(field, e.target.value)}
+                                        className="overflow-hidden rounded border border-gray-300 p-1 text-sm flex-1 min-w-0"
+                                        style={{ minWidth: '50%' }}
+                                        onInput={(e) => resizeTextarea(e.target as HTMLTextAreaElement)}
+                                        rows={1}
+                                        placeholder={`Enter ${field}...`}
+                                    />
+                                </div>
+                            ));
+                        })()}
                     </div>
                 </div>
             )}
@@ -249,7 +265,7 @@ export function RowOrientedCardEditor({
                                             <th className="px-2 text-center text-sm font-medium text-gray-700 border-r w-20">
                                                 Actions
                                             </th>
-                                            <th className="px-2 text-left text-sm font-medium text-gray-700 border-r" style={{ width: '72px' }}>
+                                            <th className="px-2 text-left text-sm font-medium text-gray-700 border-r" style={{ width: '80px' }}>
                                                 Row
                                             </th>
                                             {tableDef.columns.map((column) => (
@@ -289,7 +305,7 @@ export function RowOrientedCardEditor({
                                                         </button>
                                                     </div>
                                                 </td>
-                                                <td className="px-2 text-sm border-r bg-gray-50 min-w-0" style={{ width: '72px' }}>
+                                                <td className="px-2 text-sm border-r bg-gray-50 min-w-0" style={{ width: '80px' }}>
                                                     <input
                                                         type="text"
                                                         value={rowName}

@@ -63,23 +63,10 @@ export function AnkiSearchMessage({ message }: AnkiSearchMessageProps) {
                                         </div>
                                     )}
                                     <div className="mt-1">
-                                        {Object.entries(result.fields || {})
-                                            .slice(0, MAX_PREVIEW_FIELDS)
-                                            .map(([field, value]: [string, any]) => (
-                                                <div key={field} className="text-xs">
-                                                    <span className="font-bold">{field}:</span>{" "}
-                                                    {truncateValue(String(value))}
-                                                </div>
-                                            ))}
-
-                                        {Object.keys(result.fields || {}).length >
-                                            MAX_PREVIEW_FIELDS && (
-                                                <div className="text-gray-400 text-xs italic">
-                                                    +
-                                                    {Object.keys(result.fields).length - MAX_PREVIEW_FIELDS}{" "}
-                                                    more fields
-                                                </div>
-                                            )}
+                                        <div className="text-xs">
+                                            <span className="font-bold">Key:</span>{" "}
+                                            {result.key}
+                                        </div>
                                     </div>
                                 </div>
                             ))}

@@ -43,8 +43,6 @@ interface CardProposalMessage {
     type: "card_proposal";
     cards: Array<Record<string, string>>;
     error?: string;
-    beforeCardsMessageToUser?: string;
-    afterCardsMessageToUser?: string;
 }
 
 type ConversationMessage =
@@ -55,6 +53,23 @@ type ConversationMessage =
     | CardProposalMessage;
 
 const TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
+    {
+        type: "function",
+        function: {
+            name: "messageToUser",
+            description: "Display a message to the user. Always use this instead of returning text.",
+            parameters: {
+                type: "object",
+                properties: {
+                    message: {
+                        type: "string",
+                        description: "The message to send to the user",
+                    },
+                },
+                required: ["message"],
+            },
+        },
+    },
     {
         type: "function",
         function: {
@@ -81,14 +96,10 @@ If you use this, make sure to limit the note type specific to the current langua
         type: "function",
         function: {
             name: "proposeCards",
-            description: "Propose new flashcards using the table format",
+            description: "Propose new flashcards. The user will have the option to confirm or reject the cards, so don't ask before calling this.",
             parameters: {
                 type: "object",
                 properties: {
-                    beforeCardsMessageToUser: {
-                        type: "string",
-                        description: "Optional message to display to the user before showing the card proposals",
-                    },
                     cards: {
                         type: "array",
                         description: "Array of card objects using table structure",
@@ -121,10 +132,6 @@ If you use this, make sure to limit the note type specific to the current langua
                             required: ["tables"],
                         },
                     },
-                    afterCardsMessageToUser: {
-                        type: "string",
-                        description: "Optional message to display to the user after showing the card proposals",
-                    },
                 },
                 required: ["cards"],
             },
@@ -138,31 +145,12 @@ async function searchAnki(query: string): Promise<AnkiSearchMessage> {
         const cardIds = await Anki.findCards(query);
         const fullResults = cardIds.length > 0 ? await Anki.cardsInfo(cardIds) : [];
 
-        // Simplify results to reduce verbosity
+        // Simplify results to only show Key field to reduce verbosity
         const simplifiedResults = fullResults.map((card) => {
-            // Extract just the card ID and field values
-            const simplifiedFields: Record<string, string> = {};
-
-            // Convert fields from {fieldName: {value: "xyz", order: 1}} to {fieldName: "xyz"}
-            if (card.fields) {
-                Object.entries(card.fields).forEach(([fieldName, fieldData]) => {
-                    if (
-                        typeof fieldData === "object" &&
-                        fieldData !== null &&
-                        "value" in fieldData
-                    ) {
-                        // Only include non-empty fields
-                        const value = fieldData.value as string;
-                        if (value && value.trim() !== "") {
-                            simplifiedFields[fieldName] = value;
-                        }
-                    }
-                });
-            }
-
+            const keyField = card.fields?.Key?.value;
             return {
                 id: card.cardId,
-                fields: simplifiedFields,
+                key: keyField,
                 // Include model name if available
                 ...(card.modelName && { modelName: card.modelName }),
             };
@@ -188,8 +176,6 @@ async function searchAnki(query: string): Promise<AnkiSearchMessage> {
 async function proposeCards(
     rowCards: RowOrientedCard[],
     lang: string,
-    beforeCardsMessageToUser?: string,
-    afterCardsMessageToUser?: string,
 ): Promise<CardProposalMessage> {
     const templates = await getTemplates();
     const template = templates[lang];
@@ -213,8 +199,6 @@ async function proposeCards(
             type: "card_proposal",
             cards: columnCards,
             error: `Invalid cards detected:\n${allInvalidCards.join("\n")}`,
-            beforeCardsMessageToUser,
-            afterCardsMessageToUser,
         };
     }
 
@@ -230,8 +214,6 @@ async function proposeCards(
     return {
         type: "card_proposal",
         cards: columnCards,
-        beforeCardsMessageToUser,
-        afterCardsMessageToUser,
     };
 }
 
@@ -309,8 +291,6 @@ function formatConversationHistory(
                         tool_call: "propose_cards",
                         cards: message.cards,
                         ...(message.error && { error: message.error }),
-                        ...(message.beforeCardsMessageToUser && { beforeCardsMessageToUser: message.beforeCardsMessageToUser }),
-                        ...(message.afterCardsMessageToUser && { afterCardsMessageToUser: message.afterCardsMessageToUser }),
                     }),
                 };
             default:
@@ -408,6 +388,9 @@ async function callLLMWithRetry(
             } else {
                 throw new Error("No response received from LLM");
             }
+            console.log('Request:', messages);
+            console.log('Response:', responseMessage);
+
         } catch (error: any) {
             console.error("Error calling LLM:", error);
             if (retryCount++ >= 3) {
@@ -430,38 +413,25 @@ async function callLLMWithRetry(
                     const args = JSON.parse(toolCall.function.arguments);
                     console.log(functionName, args);
 
-                    if (functionName === "searchAnki") {
+                    if (functionName === "messageToUser") {
+                        newHistory.push({
+                            type: "llm",
+                            content: args.message,
+                        } as LLMMessage);
+                    } else if (functionName === "searchAnki") {
                         const searchResults = await searchAnki(args.query);
                         newHistory.push(searchResults);
                         isDone = false;
                     } else if (functionName === "proposeCards") {
                         const cardProposal = await proposeCards(
                             args.cards,
-                            lang,
-                            args.beforeCardsMessageToUser,
-                            args.afterCardsMessageToUser
+                            lang
                         );
-
-                        // Add beforeCardsMessageToUser if provided
-                        if (cardProposal.beforeCardsMessageToUser) {
-                            newHistory.push({
-                                type: "llm",
-                                content: cardProposal.beforeCardsMessageToUser,
-                            } as LLMMessage);
-                        }
 
                         newHistory.push(cardProposal);
 
-                        // Add afterCardsMessageToUser if provided
-                        if (cardProposal.afterCardsMessageToUser) {
-                            newHistory.push({
-                                type: "llm",
-                                content: cardProposal.afterCardsMessageToUser,
-                            } as LLMMessage);
-                        }
-
                         if (cardProposal.error) {
-                            isDone = false;
+                            isDone = retryCount++ >= 3;
                         }
                     } else {
                         throw new Error(`Unknown tool call: ${functionName}`);

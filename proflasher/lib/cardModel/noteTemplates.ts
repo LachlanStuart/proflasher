@@ -172,11 +172,29 @@ export async function validateNote(
     if (!template) {
         errors.push(`Note type "${noteType}" not found.`);
     } else {
-        const missingFields = template.requiredFields.filter(
-            (field) => !note[field],
+        // Separate required fields into table columns and non-table fields for clearer error messages
+        const tableColumns = new Set<string>();
+        const rowOrderFields = new Set<string>();
+
+        for (const tableDef of template.tableDefinitions) {
+            tableDef.columns.forEach(col => tableColumns.add(col));
+            const orderFieldName = tableDef.name === 'main' ? 'RowOrder' : `${tableDef.name.charAt(0).toUpperCase() + tableDef.name.slice(1)}RowOrder`;
+            rowOrderFields.add(orderFieldName);
+        }
+
+        // Check for missing required fields, but be more specific about the type
+        const missingTableFields = template.requiredFields.filter(
+            (field) => !note[field] && tableColumns.has(field)
         );
-        if (missingFields.length > 0) {
-            errors.push(`Missing required fields: ${missingFields.join(", ")}.`);
+        const missingNonTableFields = template.requiredFields.filter(
+            (field) => !note[field] && !tableColumns.has(field)
+        );
+
+        if (missingNonTableFields.length > 0) {
+            errors.push(`Missing required non-table fields: ${missingNonTableFields.join(", ")}.`);
+        }
+        if (missingTableFields.length > 0) {
+            errors.push(`Missing required table data for columns: ${missingTableFields.join(", ")}. Make sure your tables contain data for these columns.`);
         }
 
         // Get all valid fields (existing fields + row order fields)
@@ -204,7 +222,7 @@ export async function validateNote(
                 const actualLength = (note[field] || "").split(";").length;
                 if (actualLength !== expectedLength) {
                     errors.push(
-                        `Inconsistent length between semicolon-separated lists ${firstField} and ${field}.`,
+                        `Table data inconsistency: Column ${field} has ${actualLength} rows but ${firstField} has ${expectedLength} rows. All columns in a table must have the same number of rows.`,
                     );
                 }
             }
@@ -219,7 +237,7 @@ export async function validateNote(
                     const rowOrderLength = note[orderFieldName].split(";").length;
                     if (rowOrderLength !== expectedLength) {
                         errors.push(
-                            `Row order field ${orderFieldName} length (${rowOrderLength}) doesn't match table data length (${expectedLength}).`,
+                            `Table structure error: Row order has ${rowOrderLength} entries but table data has ${expectedLength} rows.`,
                         );
                     }
                 }

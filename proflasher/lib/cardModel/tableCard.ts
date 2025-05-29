@@ -62,7 +62,11 @@ export function rowToColumnOriented(rowCard: RowOrientedCard, tableDefinitions: 
 
         // Build semicolon-separated values for each column
         for (const column of tableDef.columns) {
-            const values = sortedRowNames.map(rowName => tableData[rowName]?.[column] || '');
+            const values = sortedRowNames.map(rowName => {
+                const value = tableData[rowName]?.[column] || '';
+                // Replace semicolons with `.,` to prevent breaking Anki's formatting
+                return value.replace(/;/g, '.,');
+            });
             result[column] = values.join(';');
         }
     }
@@ -70,7 +74,9 @@ export function rowToColumnOriented(rowCard: RowOrientedCard, tableDefinitions: 
     // Add row order fields
     for (const [tableName, rowOrder] of Object.entries(tableRowOrders)) {
         const orderFieldName = tableName === 'main' ? 'RowOrder' : `${tableName.charAt(0).toUpperCase() + tableName.slice(1)}RowOrder`;
-        result[orderFieldName] = rowOrder.join(';');
+        // Also replace semicolons in row names
+        const cleanedRowOrder = rowOrder.map(rowName => rowName.replace(/;/g, '.,'));
+        result[orderFieldName] = cleanedRowOrder.join(';');
     }
 
     return result;
@@ -111,7 +117,7 @@ export function columnToRowOriented(columnCard: ColumnOrientedCard, tableDefinit
 
         if (!rowOrderValue) continue;
 
-        const rowNames = rowOrderValue.split(';').filter(name => name.trim());
+        const rowNames = rowOrderValue.split(';').filter(name => name.trim()).map(name => name.replace(/\.,/g, ';')); // Restore semicolons in row names
         const tableData: Record<string, RowValue> = {};
 
         for (const column of tableDef.columns) {
@@ -122,7 +128,9 @@ export function columnToRowOriented(columnCard: ColumnOrientedCard, tableDefinit
                 if (!tableData[rowName]) {
                     tableData[rowName] = {};
                 }
-                tableData[rowName]![column] = columnValues[i] || '';
+                // Restore semicolons in cell values
+                const cellValue = (columnValues[i] || '').replace(/\.,/g, ';');
+                tableData[rowName]![column] = cellValue;
             }
         }
 
