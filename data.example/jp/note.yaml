@@ -20,6 +20,7 @@ fieldLangs:
 
 cardDescriptions:
   JP->EN: Japanese to English
+  Kana->EN: Kana to English
   EN->JP: English to Japanese
 
 cards:
@@ -27,6 +28,11 @@ cards:
     rows:
       - { flag: "flag-jp", field: "JP", attrs: 'lang="jp" class="prompt speakback bigtext"' }
       - { flag: "flag-jp", field: "Kana", attrs: 'lang="jp" class="response"' }
+      - { flag: "flag-en", field: "EN", attrs: 'lang="en" class="response"' }
+  Kana->EN:
+    rows:
+      - { flag: "flag-jp", field: "Kana", attrs: 'lang="jp" class="prompt speaknow"' }
+      - { flag: "flag-jp", field: "JP", attrs: 'lang="jp" class="response bigtext"' }
       - { flag: "flag-en", field: "EN", attrs: 'lang="en" class="response"' }
   EN->JP:
     rows:
