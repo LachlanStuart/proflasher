@@ -2,7 +2,7 @@ noteType: FR<->EN
 language: fr
 deckName: Lang::FR
 fieldDescriptions:
-  Key: Primary key for the card. Use the dictionary form of the word/phrase. If there is a reported clash, search for it and choose to either update the existing card or create a new card with a suffixed key.
+  Key: Primary key for the card. Use the dictionary form of the French word/phrase. If applicable and not overridden by the user, choose the masculine/singular/infinitive form. Suffix with (m) or (f) if applicable.
   FR: (Semicolon-separated list)
   EN: (Semicolon-separated list aligned to FR)
   Mnemonic: Leave blank for normal words that have English equivalents. Otherwise specify how their usage differs to English.
@@ -26,15 +26,18 @@ fieldLangs:
 
 tableDefinitions:
   - name: main
-    description: Main vocabulary with word and example sentences
+    description: Main vocabulary with word and example sentences.
     columns: [FR, EN]
     rowDescriptions:
-      Word: Dictionary form of the word/phrase
+      Word: Dictionary form of the word/phrase. Masculine singular form for nouns.
+      WordFS: (Nouns only) Feminine singular form.
+      WordMP: (Nouns only) Masculine plural form.
+      WordFP: (Nouns only) Feminine plural form.
       Sentence1: First example sentence showing usage
       Sentence2: Second example sentence for context
       Sentence3: Third example sentence for variety
   - name: extra
-    description: Optional conjugations or declinations based on word type
+    description: Optional conjugations or declinations based on word type.
     columns: [ExtraFR, ExtraEN]
     rowDescriptions:
       Dict: Infinitive form for verbs e.g. 'faire/to do', dictionary form for all other word types
@@ -45,10 +48,10 @@ tableDefinitions:
       Past: (verbs only) Past infinitive form e.g. 'avoir fait/to have done'
       PC1: (verbs only) First-person passé composé e.g. 'j'ai fait/I have done'
       PC3: (verbs only) Third-person passé composé e.g. 'il a fait/he has done'
-      MS: (adjectives only) Masculine singular form e.g. 'grand/big'
-      FS: (adjectives only) Feminine singular form e.g. 'grande/big'
-      MP: (adjectives only) Masculine plural form e.g. 'grands/big'
-      FP: (adjectives only) Feminine plural form e.g. 'grandes/big'
+      MS: (adjectives only) Masculine singular form, with hard-coded value in ExtraEN e.g. 'grand/M. Sg.'
+      FS: (adjectives only) Feminine singular form, with hard-coded value in ExtraFR e.g. 'grande/F. Sg.'
+      MP: (adjectives only) Masculine plural form, with hard-coded value in ExtraFR e.g. 'grands/M. Pl.'
+      FP: (adjectives only) Feminine plural form, with hard-coded value in ExtraFR e.g. 'grandes/F. Pl.'
 
 cardDescriptions:
   FR->EN: French to English
