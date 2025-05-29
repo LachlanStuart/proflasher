@@ -11,6 +11,14 @@ export default function SettingsPage() {
     const [saveMessage, setSaveMessage] = useState<string | null>(null);
     const [ankiLogs, setAnkiLogs] = useState<string[]>([]);
     const [isUpdatingAnki, setIsUpdatingAnki] = useState<boolean>(false);
+    const [syncOptions, setSyncOptions] = useState({
+        addNoteTypes: false,
+        addDecks: false,
+        addCardTypes: false,
+        addFields: false,
+        updateCardModels: true, // Default checked
+        syncToCloud: false,
+    });
     const { language } = useFlashcard();
 
     // Fetch config files for the currently selected language
@@ -72,22 +80,25 @@ export default function SettingsPage() {
         }
     };
 
-    // Handler for updating Anki card models
-    const handleUpdateAnkiModels = async (language?: string) => {
+    // Handler for unified Anki sync
+    const handleAnkiSync = async (targetLanguage?: string) => {
         setIsUpdatingAnki(true);
         setError(null);
         setAnkiLogs([]);
         try {
-            const response = await fetch("/api/anki/update-models", {
+            const response = await fetch("/api/anki/sync", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({ language }),
+                body: JSON.stringify({
+                    language: targetLanguage,
+                    options: syncOptions
+                }),
             });
             const data = await response.json();
             if (!response.ok) {
-                throw new Error(data.error || "Failed to update Anki models");
+                throw new Error(data.error || "Failed to sync Anki");
             }
             setAnkiLogs(data.logs);
         } catch (err: any) {
@@ -95,6 +106,14 @@ export default function SettingsPage() {
         } finally {
             setIsUpdatingAnki(false);
         }
+    };
+
+    // Handle checkbox changes
+    const handleSyncOptionChange = (option: string, checked: boolean) => {
+        setSyncOptions(prev => ({
+            ...prev,
+            [option]: checked
+        }));
     };
 
     return (
@@ -131,27 +150,125 @@ export default function SettingsPage() {
             </div>
 
             <div className="mb-6">
-                <h2 className="text-lg font-semibold mb-4">Anki</h2>
+                <h2 className="text-lg font-semibold mb-4">Anki Sync Options</h2>
                 <div className="space-y-4">
-                    <div className="flex items-center gap-4">
+                    {/* Sync Options */}
+                    <div className="bg-gray-50 p-4 rounded-md space-y-3">
+                        <h3 className="font-medium text-gray-700 mb-3">Select sync operations:</h3>
+
+                        {/* Update Card Models - Safe */}
+                        <label className="flex items-center space-x-3">
+                            <input
+                                type="checkbox"
+                                checked={syncOptions.updateCardModels}
+                                onChange={(e) => handleSyncOptionChange('updateCardModels', e.target.checked)}
+                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                            <span className="text-sm">Update card models</span>
+                        </label>
+
+                        {/* Dangerous Options */}
+                        <label className="flex items-center space-x-3">
+                            <input
+                                type="checkbox"
+                                checked={syncOptions.addNoteTypes}
+                                onChange={(e) => handleSyncOptionChange('addNoteTypes', e.target.checked)}
+                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                            <div className="flex items-center space-x-2">
+                                <span className="text-sm">Add note types if missing</span>
+                                <div className="relative group">
+                                    <span className="text-amber-500 cursor-help" title="AnkiSync will force you to upload changes to the cloud, so make sure to sync all devices before selecting this">
+                                        ⚠️
+                                    </span>
+                                </div>
+                            </div>
+                        </label>
+
+                        <label className="flex items-center space-x-3">
+                            <input
+                                type="checkbox"
+                                checked={syncOptions.addDecks}
+                                onChange={(e) => handleSyncOptionChange('addDecks', e.target.checked)}
+                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                            <div className="flex items-center space-x-2">
+                                <span className="text-sm">Add decks if missing</span>
+                                <div className="relative group">
+                                    <span className="text-amber-500 cursor-help" title="AnkiSync will force you to upload changes to the cloud, so make sure to sync all devices before selecting this">
+                                        ⚠️
+                                    </span>
+                                </div>
+                            </div>
+                        </label>
+
+                        <label className="flex items-center space-x-3">
+                            <input
+                                type="checkbox"
+                                checked={syncOptions.addCardTypes}
+                                onChange={(e) => handleSyncOptionChange('addCardTypes', e.target.checked)}
+                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                            <div className="flex items-center space-x-2">
+                                <span className="text-sm">Add card types if missing</span>
+                                <div className="relative group">
+                                    <span className="text-amber-500 cursor-help" title="AnkiSync will force you to upload changes to the cloud, so make sure to sync all devices before selecting this">
+                                        ⚠️
+                                    </span>
+                                </div>
+                            </div>
+                        </label>
+
+                        <label className="flex items-center space-x-3">
+                            <input
+                                type="checkbox"
+                                checked={syncOptions.addFields}
+                                onChange={(e) => handleSyncOptionChange('addFields', e.target.checked)}
+                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                            <div className="flex items-center space-x-2">
+                                <span className="text-sm">Add fields if missing</span>
+                                <div className="relative group">
+                                    <span className="text-amber-500 cursor-help" title="AnkiSync will force you to upload changes to the cloud, so make sure to sync all devices before selecting this">
+                                        ⚠️
+                                    </span>
+                                </div>
+                            </div>
+                        </label>
+
+                        <label className="flex items-center space-x-3">
+                            <input
+                                type="checkbox"
+                                checked={syncOptions.syncToCloud}
+                                onChange={(e) => handleSyncOptionChange('syncToCloud', e.target.checked)}
+                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                            <span className="text-sm">Sync to cloud</span>
+                        </label>
+                    </div>
+
+                    {/* Sync Buttons */}
+                    <div className="flex gap-4">
                         <button
-                            onClick={() => handleUpdateAnkiModels(language)}
+                            onClick={() => handleAnkiSync(language)}
                             disabled={isUpdatingAnki}
                             className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
                         >
-                            {isUpdatingAnki ? "Updating..." : `Update card model for ${language.toUpperCase()}`}
+                            {isUpdatingAnki ? "Syncing..." : `Sync ${language.toUpperCase()}`}
                         </button>
                         <button
-                            onClick={() => handleUpdateAnkiModels()}
+                            onClick={() => handleAnkiSync()}
                             disabled={isUpdatingAnki}
-                            className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+                            className="rounded-md bg-gray-600 px-4 py-2 text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50"
                         >
-                            {isUpdatingAnki ? "Updating..." : "Update card models for all languages"}
+                            {isUpdatingAnki ? "Syncing..." : "Sync All Languages"}
                         </button>
                     </div>
+
+                    {/* Logs */}
                     {ankiLogs.length > 0 && (
                         <div className="mt-4 bg-gray-100 p-4 rounded-md">
-                            <h3 className="font-medium mb-2">Update Log:</h3>
+                            <h3 className="font-medium mb-2">Sync Log:</h3>
                             <pre className="text-sm whitespace-pre-wrap">
                                 {ankiLogs.join("\n")}
                             </pre>

@@ -22,6 +22,7 @@ export type CardModel = {
 export type NoteTemplate = {
     noteType: string;
     language: string;
+    deckName: string;
     fieldDescriptions: Record<string, string>;
     fieldGroups: string[][];
     fieldLangs: Record<string, string>;

@@ -1,5 +1,6 @@
 noteType: JP<->EN
 language: jp
+deckName: Lang::JP
 fieldDescriptions:
   Key: Primary key for the card. Use the dictionary form of the word/phrase. If there is a reported clash, search for it and choose to either update the existing card or create a new card with a suffixed key.
   JP: (Semicolon-separated list)
@@ -7,7 +8,6 @@ fieldDescriptions:
   EN: (Semicolon-separated list aligned to JP)
   Mnemonic: Leave blank for normal words that have English equivalents. Otherwise specify how their usage differs to English.
   Related: Related words (if any). Include Japanese, Kana and English for each, e.g. '猫 (ねこ) cat, 犬 (いぬ) dog'
-  RowOrder: (Semicolon-separated list of row names for the main table)
 
 requiredFields: [Key, JP, EN]
 
@@ -19,17 +19,15 @@ fieldLangs:
   Kana: jp
   EN: en
 
-# New: Table definitions for row-oriented format
 tableDefinitions:
   - name: main
-    description: Main vocabulary items and example sentences
+    description: Main vocabulary with word and example sentences
     columns: [JP, Kana, EN]
     rowDescriptions:
       Word: Dictionary form of the word/phrase
-      Sentence1: Primary example sentence showing usage
-      Sentence2: Secondary example sentence for context
-      Example1: Additional usage example
-      Example2: Alternative usage context
+      Sentence1: First example sentence showing usage
+      Sentence2: Second example sentence for context
+      Sentence3: Third example sentence for variety
 
 cardDescriptions:
   JP->EN: Japanese to English

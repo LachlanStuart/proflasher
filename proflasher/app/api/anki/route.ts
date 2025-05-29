@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { Anki } from "~/lib/ankiConnect";
+import { loadTemplates } from "~/lib/cardModel/noteTemplates";
 
 export async function POST(request: NextRequest) {
     try {
@@ -18,12 +19,19 @@ export async function POST(request: NextRequest) {
         // Handle different AnkiConnect actions
         if (action === "addNote") {
             const { modelName, fields } = params;
-            const deckName = {
-                "ZH<->EN": "Lang::ZH",
-                "DE<->EN": "Lang::DE",
-                "FR<->EN": "Lang::FR",
-                "JP<->EN": "Lang::JP",
-            }[modelName as string]!;
+
+            // Load templates to get deck name
+            const templates = await loadTemplates();
+            const template = Object.values(templates).find(t => t.noteType === modelName);
+
+            if (!template) {
+                return NextResponse.json(
+                    { error: `Template not found for model: ${modelName}` },
+                    { status: 400 },
+                );
+            }
+
+            const deckName = template.deckName;
             result = await Anki.addNote({ deckName, modelName, fields });
         } else if (action === "findNotes") {
             result = await Anki.findNotes(params);

@@ -152,6 +152,21 @@ export const Anki = {
         callAnkiConnect("updateModelTemplates", { model: { name, templates } }),
     updateModelStyling: (name: string, css: string): Promise<null> =>
         callAnkiConnect("updateModelStyling", { model: { name, css } }),
+    modelFieldAdd: (modelName: string, fieldName: string, index?: number): Promise<null> =>
+        callAnkiConnect("modelFieldAdd", { modelName, fieldName, index }),
+    modelTemplateAdd: (modelName: string, template: { Name: string; Front: string; Back: string }): Promise<null> =>
+        callAnkiConnect("modelTemplateAdd", { modelName, template }),
+    createModel: (modelName: string, inOrderFields: string[], cardTemplates: any[], css?: string): Promise<null> =>
+        callAnkiConnect("createModel", {
+            modelName,
+            inOrderFields,
+            cardTemplates,
+            css: css || ""
+        }),
+    modelFieldsOnTemplates: (modelName: string): Promise<Record<string, [string[], string[]]>> =>
+        callAnkiConnect("modelFieldsOnTemplates", { modelName }),
+    findModelsInCollection: (modelNames: string[]): Promise<string[]> =>
+        callAnkiConnect("findModelsInCollection", { modelNames }),
 
     // Note
     addNote: (note: AddNote): Promise<number | null> =>

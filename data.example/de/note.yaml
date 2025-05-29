@@ -1,5 +1,6 @@
 noteType: DE<->EN
 language: de
+deckName: Lang::DE
 fieldDescriptions:
   Key: Primary key for the card. Use the dictionary form of the word/phrase. If there is a reported clash, search for it and choose to either update the existing card or create a new card with a suffixed key.
   DE: (Semicolon-separated list)
@@ -15,6 +16,16 @@ fieldGroups:
 fieldLangs:
   DE: de
   EN: en
+
+tableDefinitions:
+  - name: main
+    description: Main vocabulary with word and example sentences
+    columns: [DE, EN]
+    rowDescriptions:
+      Word: Dictionary form of the word/phrase
+      Sentence1: First example sentence showing usage
+      Sentence2: Second example sentence for context
+      Sentence3: Third example sentence for variety
 
 cardDescriptions:
   DE->EN: German to English

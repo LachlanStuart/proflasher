@@ -246,14 +246,14 @@ export function RowOrientedCardEditor({
                                 <table className="w-full">
                                     <thead className="bg-gray-50">
                                         <tr>
-                                            <th className="px-2 py-1 text-center text-sm font-medium text-gray-700 border-r w-20">
+                                            <th className="px-2 text-center text-sm font-medium text-gray-700 border-r w-20">
                                                 Actions
                                             </th>
-                                            <th className="px-2 py-1 text-left text-sm font-medium text-gray-700 border-r">
+                                            <th className="px-2 text-left text-sm font-medium text-gray-700 border-r" style={{ width: '72px' }}>
                                                 Row
                                             </th>
                                             {tableDef.columns.map((column) => (
-                                                <th key={column} className="px-2 py-1 text-left text-sm font-medium text-gray-700 border-r last:border-r-0">
+                                                <th key={column} className="px-2 text-left text-sm font-medium text-gray-700 border-r last:border-r-0">
                                                     {column}
                                                 </th>
                                             ))}
@@ -262,7 +262,7 @@ export function RowOrientedCardEditor({
                                     <tbody>
                                         {rowNames.map((rowName, index) => (
                                             <tr key={rowName} className="border-t">
-                                                <td className="px-2 py-1 text-center border-r">
+                                                <td className="px-2 text-center border-r">
                                                     <div className="flex items-center justify-center gap-1">
                                                         <button
                                                             onClick={() => moveRow(tableDef.name, rowName, 'up')}
@@ -289,7 +289,7 @@ export function RowOrientedCardEditor({
                                                         </button>
                                                     </div>
                                                 </td>
-                                                <td className="px-2 py-1 text-sm border-r bg-gray-50 min-w-0">
+                                                <td className="px-2 text-sm border-r bg-gray-50 min-w-0" style={{ width: '72px' }}>
                                                     <input
                                                         type="text"
                                                         value={rowName}
@@ -299,7 +299,7 @@ export function RowOrientedCardEditor({
                                                     />
                                                 </td>
                                                 {tableDef.columns.map((column) => (
-                                                    <td key={column} className="px-2 py-1 border-r last:border-r-0">
+                                                    <td key={column} className="px-2 border-r last:border-r-0">
                                                         <textarea
                                                             ref={(el) => {
                                                                 textareaRefs.current[`${tableDef.name}-${rowName}-${column}`] = el;
