@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import yaml from 'yaml';
 import { env } from '~/lib/env';
+import type { TableDefinition } from './tableCard';
 
 export type CardRow = {
     flag: string;
@@ -27,21 +28,21 @@ export type NoteTemplate = {
     requiredFields: string[];
     cardDescriptions: Record<string, string>;
     cards: Record<string, CardTemplate>;
+    // New: table definitions for row-oriented format
+    tableDefinitions?: TableDefinition[];
 };
 
 export type ProcessedNoteTemplate = Omit<NoteTemplate, 'cards'> & {
     cards: Record<string, CardModel>;
+    // Computed field for easy access to table definitions
+    tableDefinitions: TableDefinition[];
 };
 
 export type Templates = Record<string, ProcessedNoteTemplate>;
 
-const escapeHTMLAttribute = (str: string) =>
-    str
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&apos;");
+function escapeHTMLAttribute(str: string): string {
+    return str.replace(/"/g, "&quot;");
+}
 
 export const cards = ({ language, fieldGroups, fieldLangs, cards }: NoteTemplate): Record<string, CardModel> => {
     const cardModels: Record<string, CardModel> = {};
@@ -74,6 +75,41 @@ export const cards = ({ language, fieldGroups, fieldLangs, cards }: NoteTemplate
     return cardModels;
 };
 
+/**
+ * Generate table definitions from fieldGroups for backward compatibility
+ */
+function generateTableDefinitionsFromFieldGroups(
+    fieldGroups: string[][],
+    fieldLangs: Record<string, string>
+): TableDefinition[] {
+    return fieldGroups.map((group, index) => {
+        const tableName = index === 0 ? 'main' : `table${index}`;
+
+        // Try to identify what this table represents based on field names
+        let description = `Table ${index + 1}`;
+        if (group.some(field => field.toLowerCase().includes('extra'))) {
+            description = 'Additional examples and context';
+        } else if (index === 0) {
+            description = 'Main vocabulary items';
+        }
+
+        return {
+            name: tableName,
+            description,
+            columns: group,
+            rowDescriptions: {
+                'Word': 'Dictionary form of the word/phrase',
+                'Sentence1': 'Primary example sentence',
+                'Sentence2': 'Secondary example sentence',
+                'Example1': 'First usage example',
+                'Example2': 'Second usage example',
+                'Context1': 'First context example',
+                'Context2': 'Second context example',
+            }
+        };
+    });
+}
+
 // Cache templates in memory
 let templatesCache: Templates | null = null;
 
@@ -98,9 +134,22 @@ export async function loadTemplates(): Promise<Templates> {
             // Convert the YAML card templates into Anki card models
             const cardModels = cards(template);
 
+            // Generate table definitions if not provided
+            const tableDefinitions = template.tableDefinitions ||
+                generateTableDefinitionsFromFieldGroups(template.fieldGroups, template.fieldLangs);
+
+            // Filter out RowOrder fields from fieldDescriptions since they're auto-generated
+            const filteredFieldDescriptions = { ...template.fieldDescriptions };
+            for (const tableDef of tableDefinitions) {
+                const orderFieldName = tableDef.name === 'main' ? 'RowOrder' : `${tableDef.name.charAt(0).toUpperCase() + tableDef.name.slice(1)}RowOrder`;
+                delete filteredFieldDescriptions[orderFieldName];
+            }
+
             templates[language] = {
                 ...template,
+                fieldDescriptions: filteredFieldDescriptions,
                 cards: cardModels,
+                tableDefinitions,
             };
         } catch (error) {
             console.error(`Failed to load template for ${language}:`, error);
@@ -128,20 +177,50 @@ export async function validateNote(
         if (missingFields.length > 0) {
             errors.push(`Missing required fields: ${missingFields.join(", ")}.`);
         }
+
+        // Get all valid fields (existing fields + row order fields)
+        const validFields = new Set(Object.keys(template.fieldDescriptions));
+
+        // Add row order fields as valid
+        for (const tableDef of template.tableDefinitions) {
+            const orderFieldName = tableDef.name === 'main' ? 'RowOrder' : `${tableDef.name.charAt(0).toUpperCase() + tableDef.name.slice(1)}RowOrder`;
+            validFields.add(orderFieldName);
+        }
+
         const extraFields = Object.keys(note).filter(
-            (field) => !Object.hasOwn(template.fieldDescriptions, field),
+            (field) => !validFields.has(field),
         );
         if (extraFields.length > 0) {
             errors.push(`Unrecognized fields: ${extraFields.join(", ")}.`);
         }
+
+        // Validate field group consistency (semicolon-separated lists)
         for (const fieldGroup of template.fieldGroups) {
-            const expectedLength = (note[fieldGroup[0]!] || "").split(";").length;
+            const firstField = fieldGroup[0]!;
+            const expectedLength = (note[firstField] || "").split(";").length;
+
             for (const field of fieldGroup) {
-                const length = (note[field] || "").split(";").length;
-                if (length !== expectedLength) {
+                const actualLength = (note[field] || "").split(";").length;
+                if (actualLength !== expectedLength) {
                     errors.push(
-                        `Inconsistent length between semicolon-separated lists ${fieldGroup[0]} and ${field}.`,
+                        `Inconsistent length between semicolon-separated lists ${firstField} and ${field}.`,
                     );
+                }
+            }
+
+            // Validate that row order field has the same length
+            const tableDef = template.tableDefinitions.find(table =>
+                table.columns.every(col => fieldGroup.includes(col))
+            );
+            if (tableDef) {
+                const orderFieldName = tableDef.name === 'main' ? 'RowOrder' : `${tableDef.name.charAt(0).toUpperCase() + tableDef.name.slice(1)}RowOrder`;
+                if (note[orderFieldName]) {
+                    const rowOrderLength = note[orderFieldName].split(";").length;
+                    if (rowOrderLength !== expectedLength) {
+                        errors.push(
+                            `Row order field ${orderFieldName} length (${rowOrderLength}) doesn't match table data length (${expectedLength}).`,
+                        );
+                    }
                 }
             }
         }

@@ -5,6 +5,8 @@ import OpenAI from "openai";
 import { env } from "~/lib/env";
 import { Anki } from "~/lib/ankiConnect";
 import { validateNote, loadTemplates, type Templates } from "~/lib/cardModel/noteTemplates";
+import { rowToColumnOriented, columnToRowOriented, type RowOrientedCard } from "~/lib/cardModel/tableCard";
+import { generateTablePrompt } from "~/lib/llm/tablePrompts";
 
 // Cache templates in memory to avoid reading from disk on every request
 let templatesCache: Templates | null = null;
@@ -79,7 +81,7 @@ If you use this, make sure to limit the note type specific to the current langua
         type: "function",
         function: {
             name: "proposeCards",
-            description: "Propose new flashcards to create",
+            description: "Propose new flashcards using the table format",
             parameters: {
                 type: "object",
                 properties: {
@@ -89,19 +91,34 @@ If you use this, make sure to limit the note type specific to the current langua
                     },
                     cards: {
                         type: "array",
-                        description:
-                            "Array of card objects with fields matching the template",
+                        description: "Array of card objects using table structure",
                         items: {
                             type: "object",
                             properties: {
-                                cardThinking: {
-                                    type: "string",
-                                    description: "Optional thinking process for this card before providing fields. Use this for trying several translation combinations to ensure unambiguity in both directions. Not shown to user.",
+                                fields: {
+                                    type: "object",
+                                    description: "Non-table fields like Key, Mnemonic, Related",
+                                    additionalProperties: {
+                                        type: "string",
+                                    },
+                                },
+                                tables: {
+                                    type: "object",
+                                    description: "Table data organized by table name",
+                                    additionalProperties: {
+                                        type: "object",
+                                        description: "Rows in this table",
+                                        additionalProperties: {
+                                            type: "object",
+                                            description: "Column values for this row",
+                                            additionalProperties: {
+                                                type: "string",
+                                            },
+                                        },
+                                    },
                                 },
                             },
-                            additionalProperties: {
-                                type: "string",
-                            },
+                            required: ["tables"],
                         },
                     },
                     afterCardsMessageToUser: {
@@ -167,9 +184,9 @@ async function searchAnki(query: string): Promise<AnkiSearchMessage> {
     }
 }
 
-// Propose cards to create or update with validation
+// Propose cards using table format
 async function proposeCards(
-    cards: Array<Record<string, string>>,
+    rowCards: RowOrientedCard[],
     lang: string,
     beforeCardsMessageToUser?: string,
     afterCardsMessageToUser?: string,
@@ -178,18 +195,13 @@ async function proposeCards(
     const template = templates[lang];
     if (!template) throw new Error(`Template for language ${lang} not found`);
 
-    // Log cardThinking for debugging and clean it from the cards
-    const cleanedCards = cards.map((card, index) => {
-        const cleanedCard = { ...card };
-        if (cleanedCard.cardThinking) {
-            console.log(`Card #${index + 1} Key: ${cleanedCard.Key || 'N/A'}, Thinking:`, cleanedCard.cardThinking);
-            delete cleanedCard.cardThinking;
-        }
-        return cleanedCard;
-    });
+    // Convert row-oriented cards to column-oriented for validation and Anki
+    const columnCards = rowCards.map(rowCard =>
+        rowToColumnOriented(rowCard, template.tableDefinitions)
+    );
 
-    // Validate cards
-    const invalidCards = await Promise.all(cleanedCards.map(async (card, index) => {
+    // Validate converted cards
+    const invalidCards = await Promise.all(columnCards.map(async (card, index) => {
         const { isValid, error } = await validateNote(template.noteType, card, templates);
         return isValid ? [] : [`Card #${index + 1} has invalid fields: ${error}`];
     }));
@@ -199,7 +211,7 @@ async function proposeCards(
         console.error("Invalid cards detected:", allInvalidCards);
         return {
             type: "card_proposal",
-            cards: cleanedCards,
+            cards: columnCards,
             error: `Invalid cards detected:\n${allInvalidCards.join("\n")}`,
             beforeCardsMessageToUser,
             afterCardsMessageToUser,
@@ -207,7 +219,7 @@ async function proposeCards(
     }
 
     // Fill null fields with empty strings
-    for (const card of cleanedCards) {
+    for (const card of columnCards) {
         for (const field of Object.keys(template.fieldDescriptions)) {
             if (!card[field]) {
                 card[field] = "";
@@ -217,7 +229,7 @@ async function proposeCards(
 
     return {
         type: "card_proposal",
-        cards: cleanedCards,
+        cards: columnCards,
         beforeCardsMessageToUser,
         afterCardsMessageToUser,
     };
@@ -229,10 +241,42 @@ async function buildSystemInstructions(lang: string): Promise<string> {
     const template = templates[lang];
     if (!template) throw new Error(`Template for language ${lang} not found`);
 
-    return await fs.readFile(
-        path.join(env.DATA_REPO_PATH, lang, "prompt.md"),
-        "utf-8",
-    );
+    let systemPrompt = "";
+    try {
+        systemPrompt = await fs.readFile(
+            path.join(env.DATA_REPO_PATH, lang, "prompt.md"),
+            "utf-8",
+        );
+    } catch (error) {
+        console.warn(`No system prompt found for language ${lang}, using default`);
+        systemPrompt = `You are a language learning assistant helping create flashcards for ${template.language.toUpperCase()} language learning.`;
+    }
+
+    // Add table format information
+    systemPrompt += "\n\n" + generateTablePrompt(template);
+
+    // Add field descriptions
+    systemPrompt += "\n\n## Field Descriptions\n\n";
+    for (const [field, description] of Object.entries(template.fieldDescriptions)) {
+        systemPrompt += `- **${field}**: ${description}\n`;
+    }
+
+    // Add required fields information
+    systemPrompt += `\n\n## Required Fields\n\nThe following fields are required: ${template.requiredFields.join(", ")}\n`;
+
+    // Add available card types
+    systemPrompt += "\n\n## Available Card Types\n\n";
+    for (const [type, description] of Object.entries(template.cardDescriptions)) {
+        systemPrompt += `- **${type}**: ${description}\n`;
+    }
+
+    systemPrompt += "\n\n## Instructions\n\n";
+    systemPrompt += "- Use the table format for better clarity and easier editing\n";
+    systemPrompt += "- Focus on one row at a time when explaining or modifying cards\n";
+    systemPrompt += "- Ensure each row contains related, complete information\n";
+    systemPrompt += "- Use meaningful row names that reflect the content type\n";
+
+    return systemPrompt;
 }
 
 // Convert conversation history to OpenAI format

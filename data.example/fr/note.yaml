@@ -8,18 +8,38 @@ fieldDescriptions:
   Related: Related words (if any). Include French and English, e.g. 'le chat (the cat); le chaton (the kitten)'
   ExtraFR: (Semicolon-separated list)
   ExtraEN: (Semicolon-separated list aligned to ExtraFR)
+  RowOrder: (Semicolon-separated list of row names for the main table)
+  ExtraRowOrder: (Semicolon-separated list of row names for the extra table)
 
 requiredFields: [Key, FR, EN]
 
 fieldGroups:
-  - [ExtraFR, ExtraEN]
   - [FR, EN]
+  - [ExtraFR, ExtraEN]
 
 fieldLangs:
   FR: fr
   EN: en
   ExtraFR: fr
   ExtraEN: en
+
+# New: Table definitions for row-oriented format
+tableDefinitions:
+  - name: main
+    description: Main vocabulary items and example sentences
+    columns: [FR, EN]
+    rowDescriptions:
+      Word: Dictionary form of the word/phrase
+      Sentence1: Primary example sentence showing usage
+      Sentence2: Secondary example sentence for context
+  - name: extra
+    description: Additional examples and contextual usage
+    columns: [ExtraFR, ExtraEN]
+    rowDescriptions:
+      Context1: Additional contextual example
+      Context2: Alternative usage context
+      Related1: Related expression or phrase
+      Related2: Another related expression
 
 cardDescriptions:
   FR->EN: French to English

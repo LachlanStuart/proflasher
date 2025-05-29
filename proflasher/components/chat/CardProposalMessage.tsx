@@ -1,11 +1,19 @@
 import { useEffect, useRef, useState } from "react";
 import { useFlashcard } from "~/lib/context/FlashcardContext";
+import { RowOrientedCardEditor } from "./RowOrientedCardEditor";
+import {
+    rowToColumnOriented,
+    columnToRowOriented,
+    type RowOrientedCard
+} from "~/lib/cardModel/tableCard";
 
 // Define the CardProposalMessageType locally to fix import error
 interface CardProposalMessageType {
     type: "card_proposal";
     cards: Array<Record<string, string>>;
     error?: string;
+    beforeCardsMessageToUser?: string;
+    afterCardsMessageToUser?: string;
 }
 
 interface CardProposalMessageProps {
@@ -24,56 +32,24 @@ export function CardProposalMessage({
     onAddToAnki,
 }: CardProposalMessageProps) {
     const { language, activeCardTypes, setActiveCardTypes, template } = useFlashcard();
-    const [editedCards, setEditedCards] = useState<Record<string, string>[]>(
-        message.cards.map((card: Record<string, string>) => ({ ...card })),
-    );
+
+    // Convert column-oriented cards to row-oriented for editing
+    const [editedRowCards, setEditedRowCards] = useState<RowOrientedCard[]>(() => {
+        return message.cards.map(card =>
+            columnToRowOriented(card, template.tableDefinitions)
+        );
+    });
+
     const [selectedCard, setSelectedCard] = useState(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isAddingAll, setIsAddingAll] = useState(false);
-    const textareaRefs = useRef<{ [field: string]: HTMLTextAreaElement | null }>({});
 
-    // Auto-resize textareas on content change
-    const resizeTextarea = (textarea: HTMLTextAreaElement) => {
-        if (!textarea) return;
-
-        // Reset height to measure scrollHeight correctly
-        textarea.style.height = "auto";
-
-        // Calculate new height (with a maximum of 4 rows)
-        const lineHeight =
-            Number.parseInt(getComputedStyle(textarea).lineHeight) || 20;
-        const maxHeight = lineHeight * 4;
-        const newHeight = Math.min(textarea.scrollHeight, maxHeight);
-
-        textarea.style.height = `${newHeight}px`;
-        textarea.style.overflowY =
-            textarea.scrollHeight > maxHeight ? "auto" : "hidden";
+    // Handle row-oriented card changes
+    const handleRowCardChange = (newCard: RowOrientedCard) => {
+        const updatedRowCards = [...editedRowCards];
+        updatedRowCards[selectedCard] = newCard;
+        setEditedRowCards(updatedRowCards);
     };
-
-    // Handle field changes
-    const handleFieldChange = (field: string, value: string) => {
-        const updatedCards = [...editedCards];
-        updatedCards[selectedCard] = {
-            ...updatedCards[selectedCard],
-            [field]: value,
-        };
-        setEditedCards(updatedCards);
-
-        // Resize the textarea after content change
-        setTimeout(() => {
-            if (textareaRefs.current[field]) {
-                resizeTextarea(textareaRefs.current[field]!);
-            }
-        }, 0);
-    };
-
-    // Initialize textarea heights and resize on card change
-    useEffect(() => {
-        // Resize all textareas when card changes
-        Object.values(textareaRefs.current).forEach((textarea) => {
-            if (textarea) resizeTextarea(textarea);
-        });
-    }, [selectedCard]);
 
     // Handle previous/next card navigation
     const goToPreviousCard = () => {
@@ -83,7 +59,7 @@ export function CardProposalMessage({
     };
 
     const goToNextCard = () => {
-        if (selectedCard < editedCards.length - 1) {
+        if (selectedCard < editedRowCards.length - 1) {
             setSelectedCard(selectedCard + 1);
         }
     };
@@ -92,7 +68,9 @@ export function CardProposalMessage({
     const handleSubmit = async () => {
         setIsSubmitting(true);
         try {
-            await onAddToAnki(editedCards[selectedCard]!, template.noteType, activeCardTypes);
+            // Convert to column-oriented format for Anki compatibility
+            const cardToSubmit = rowToColumnOriented(editedRowCards[selectedCard]!, template.tableDefinitions);
+            await onAddToAnki(cardToSubmit, template.noteType, activeCardTypes);
         } finally {
             setIsSubmitting(false);
         }
@@ -105,8 +83,9 @@ export function CardProposalMessage({
         setIsAddingAll(true);
         try {
             // Add each card from this proposal one by one
-            for (const card of editedCards) {
-                await onAddToAnki(card, template.noteType, activeCardTypes);
+            for (let i = 0; i < editedRowCards.length; i++) {
+                const cardToSubmit = rowToColumnOriented(editedRowCards[i]!, template.tableDefinitions);
+                await onAddToAnki(cardToSubmit, template.noteType, activeCardTypes);
             }
         } finally {
             setIsAddingAll(false);
@@ -114,18 +93,21 @@ export function CardProposalMessage({
     };
 
     // Get current card
-    const currentCard = editedCards[selectedCard]!;
-
-    // Generate ordered fields based on template.fieldOrder if available
-    const orderedFields = Object.keys(template.fieldDescriptions).map(
-        (field) => [field, currentCard[field] || ""] as [string, string],
-    );
+    const currentRowCard = editedRowCards[selectedCard]!;
 
     return (
         <div className="mb-4 flex">
-            <div className="w-full max-w-[90%] rounded-lg border border-green-200 bg-green-50 px-4 py-3">
-                <div className="mb-2 font-bold text-green-700">
-                    💡 Card Proposal ({selectedCard + 1}/{editedCards.length})
+            <div className="w-full max-w-[95%] rounded-lg border border-green-200 bg-green-50 px-4 py-3">
+                {message.beforeCardsMessageToUser && (
+                    <div className="mb-3 text-green-700">
+                        {message.beforeCardsMessageToUser}
+                    </div>
+                )}
+
+                <div className="mb-2 flex items-center justify-between">
+                    <div className="font-bold text-green-700">
+                        💡 Card Proposal ({selectedCard + 1}/{editedRowCards.length})
+                    </div>
                 </div>
 
                 {message.error ? (
@@ -135,7 +117,7 @@ export function CardProposalMessage({
                 ) : (
                     <>
                         {/* Card navigation if multiple cards */}
-                        {editedCards.length > 1 && (
+                        {editedRowCards.length > 1 && (
                             <div className="mb-4 flex items-center gap-1">
                                 <button
                                     onClick={goToPreviousCard}
@@ -144,7 +126,7 @@ export function CardProposalMessage({
                                 >
                                     &lt;
                                 </button>
-                                {editedCards.map((_, index) => (
+                                {editedRowCards.map((_, index) => (
                                     <button
                                         key={index}
                                         onClick={() => setSelectedCard(index)}
@@ -156,7 +138,7 @@ export function CardProposalMessage({
                                 ))}
                                 <button
                                     onClick={goToNextCard}
-                                    disabled={selectedCard === editedCards.length - 1}
+                                    disabled={selectedCard === editedRowCards.length - 1}
                                     className="rounded bg-gray-200 px-3 py-1 text-gray-700 disabled:bg-gray-100 disabled:text-gray-400"
                                 >
                                     &gt;
@@ -172,32 +154,13 @@ export function CardProposalMessage({
                             </div>
                         )}
 
-                        <div className="mb-4 grid gap-3">
-                            {orderedFields.map(([field, value]) => (
-                                <div key={field} className="flex flex-col">
-                                    <label className="mb-1 font-medium text-gray-700">
-                                        {field}:
-                                        {template.fieldDescriptions[field] &&
-                                            field !== "JsonData" && (
-                                                <span className="ml-1 text-gray-500 text-xs">
-                                                    ({template.fieldDescriptions[field]})
-                                                </span>
-                                            )}
-                                    </label>
-                                    <textarea
-                                        ref={(el) => {
-                                            textareaRefs.current[field] = el;
-                                        }}
-                                        value={value}
-                                        onChange={(e) => handleFieldChange(field, e.target.value)}
-                                        className="overflow-hidden rounded border border-gray-300 p-1"
-                                        onInput={(e) =>
-                                            resizeTextarea(e.target as HTMLTextAreaElement)
-                                        }
-                                        rows={1}
-                                    />
-                                </div>
-                            ))}
+                        {/* Card content */}
+                        <div className="mb-4">
+                            <RowOrientedCardEditor
+                                card={currentRowCard}
+                                tableDefinitions={template.tableDefinitions}
+                                onCardChange={handleRowCardChange}
+                            />
                         </div>
 
                         {/* Card type selection and Add button in same row */}
@@ -230,6 +193,12 @@ export function CardProposalMessage({
                             </button>
                         </div>
                     </>
+                )}
+
+                {message.afterCardsMessageToUser && (
+                    <div className="mt-3 text-green-700">
+                        {message.afterCardsMessageToUser}
+                    </div>
                 )}
             </div>
         </div>
