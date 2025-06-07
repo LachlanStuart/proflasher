@@ -2,9 +2,20 @@ noteType: FR<->EN
 language: fr
 deckName: Lang::FR
 fieldDescriptions:
-  Key: Primary key for the card. Use the dictionary form of the French word/phrase. If applicable and not overridden by the user, choose the masculine/singular/infinitive form. Suffix with (m) or (f) if applicable.
-  Mnemonic: Leave blank for normal words that have English equivalents. Otherwise specify how their usage differs to English.
-  Related: Related words (if any). Include French and English, e.g. 'le chat (the cat); le chaton (the kitten)'
+  Key: >
+    Primary key for the card.
+    Use the infinitive/neutral form of the word/phrase in French, as it would appear in a dictionary.
+    If applicable and not overridden by the user, choose the masculine/singular/infinitive form.
+    Suffix with (m) or (f) if applicable.
+  Mnemonic: >
+    Leave blank for straightforward words.
+    May be used for usage notes for words when a word's usage or pragmatic tone differs from its English equivalent.
+    May also be used for listing exceptional cases, e.g. how fressen is only used with animals.
+  Related: >
+    Related words (if any). Try to stay below 4 words.
+    Include French and English, e.g. 'le chat (the cat); le chaton (the kitten)'
+    Prioritize special word pairings such as verb+preposition and verb+noun combinations.
+    This field may also be used for listing antonyms and other items in common sets (e.g. seasons).
 
 requiredFields: [Key, FR, EN]
 
