@@ -51,51 +51,65 @@ interface CardProposalMessage {
     toolCallId: string;
 }
 
+interface GetNotesMessage {
+    type: "get_notes";
+    keys: string[];
+    noteInfos: Record<string, any> | null;
+    error?: string;
+    toolCallId: string;
+}
+
 type ConversationMessage =
     | UserMessage
     | LLMMessage
     | ErrorMessage
     | AnkiSearchMessage
-    | CardProposalMessage;
+    | CardProposalMessage
+    | GetNotesMessage;
 
 const TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
     {
         type: "function",
         function: {
-            name: "messageToUser",
-            description:
-                "Display a message to the user. Always use this instead of returning text.",
+            name: "searchAnki",
+            description: `Search for existing cards in Anki. Only use this if the user asks you to check existing cards.
+The search will automatically be scoped to the current language's note type.
+Example queries:
+- Marked cards: "tag:marked"
+- Cards that the user has had difficulty with: "prop:lapses>4"
+- Active cards that the user has seen many times: "prop:reps>15 -is:suspended"
+- Cards containing the word "beyond": "beyond" (searches without a colon are free text search)
+`,
             parameters: {
                 type: "object",
                 properties: {
-                    message: {
+                    query: {
                         type: "string",
-                        description: "The message to send to the user",
+                        description: "An Anki search query (note type will be automatically added)",
                     },
                 },
-                required: ["message"],
+                required: ["query"],
             },
         },
     },
     {
         type: "function",
         function: {
-            name: "searchAnki",
-            description: `Search for existing cards in Anki. Only use this if the user asks you to check existing cards.
-If you use this, make sure to limit the note type specific to the current language, by prefixing the query with one of these:
-- "note:ZH<->EN " for Chinese
-- "note:FR<->EN " for French
-- "note:JP<->EN " for Japanese
-- "note:DE<->EN " for German`,
+            name: "getNotes",
+            description: "Get detailed information about one or more specific notes by their Key field. This retrieves all fields from the note including metadata.",
             parameters: {
                 type: "object",
                 properties: {
-                    query: {
-                        type: "string",
-                        description: "An Anki search query",
+                    keys: {
+                        type: "array",
+                        description: "The Key field values of the notes to retrieve",
+                        items: {
+                            type: "string",
+                            description: "The Key field value of the note to retrieve",
+                        },
                     },
                 },
-                required: ["query"],
+                required: ["keys"],
             },
         },
     },
@@ -155,26 +169,34 @@ If you use this, make sure to limit the note type specific to the current langua
 // Search Anki for cards
 async function searchAnki(
     query: string,
+    lang: string,
     toolCallId: string,
 ): Promise<AnkiSearchMessage> {
     try {
-        const cardIds = await Anki.findCards(query);
-        const fullResults = cardIds.length > 0 ? await Anki.cardsInfo(cardIds) : [];
+        // Get the note type for the current language
+        const templates = await getTemplates();
+        const noteType = templates[lang]?.noteType;
+
+        // Prepend note type to the query if it exists
+        const finalQuery = noteType ? `note:${noteType} ${query}` : query;
+
+        const noteIds = await Anki.findNotes(finalQuery);
+        const fullResults = noteIds.length > 0 ? await Anki.notesInfo(noteIds) : [];
 
         // Simplify results to only show Key field to reduce verbosity
-        const simplifiedResults = fullResults.map((card) => {
-            const keyField = card.fields?.Key?.value;
+        const simplifiedResults = fullResults.map((note) => {
+            const keyField = note.fields?.Key?.value;
             return {
-                id: card.cardId,
+                id: note.noteId,
                 key: keyField,
                 // Include model name if available
-                ...(card.modelName && { modelName: card.modelName }),
+                ...(note.modelName && { modelName: note.modelName }),
             };
         });
 
         return {
             type: "anki_search",
-            query,
+            query: finalQuery,
             results: simplifiedResults,
             toolCallId,
         };
@@ -184,6 +206,51 @@ async function searchAnki(
             type: "anki_search",
             query,
             results: [],
+            error: String(error),
+            toolCallId,
+        };
+    }
+}
+
+// Get detailed note information by Key field
+async function getNotes(
+    keys: string[],
+    lang: string,
+    toolCallId: string,
+): Promise<GetNotesMessage> {
+    try {
+        // Get the note type for the current language
+        const templates = await getTemplates();
+        const noteType = templates[lang]?.noteType ?? '';
+
+        // Search for notes with the specific Key field value
+        const noteIdsByKey = await Promise.all(keys.map(async key => [key, await Anki.findNotes(`note:${noteType} Key:${key}`)]));
+
+        const noteInfos = [];
+        for (const [key, noteIds] of noteIdsByKey) {
+            if (!noteIds || noteIds.length === 0) {
+                noteInfos.push({
+                    key,
+                    error: `No note found with Key: ${key}`,
+                });
+            } else {
+                const noteInfo = await Anki.notesInfo([noteIds[0]! as number]);
+                noteInfos.push(noteInfo);
+            }
+        }
+
+        return {
+            type: "get_notes",
+            keys,
+            noteInfos,
+            toolCallId,
+        };
+    } catch (error) {
+        console.error("Error getting note:", error);
+        return {
+            type: "get_notes",
+            keys,
+            noteInfos: null,
             error: String(error),
             toolCallId,
         };
@@ -328,12 +395,6 @@ async function buildSystemInstructions(lang: string): Promise<string> {
     // Add required fields information
     systemPrompt += `\n\n## Required Fields\n\nThe following fields are required: ${template.requiredFields.join(", ")}\n`;
 
-    // Add available card types
-    systemPrompt += "\n\n## Available Card Types\n\n";
-    for (const [type, description] of Object.entries(template.cardDescriptions)) {
-        systemPrompt += `- **${type}**: ${description}\n`;
-    }
-
     systemPrompt += "End of system prompt. User's request will follow."
 
     return systemPrompt;
@@ -357,14 +418,12 @@ function formatConversationHistory(
                 content: `Previous error: ${message.content}`,
             });
         } else if (message.type === "anki_search") {
-            // Format as proper tool call and result using preserved IDs
-            const searchId = message.toolCallId;
             result.push({
                 role: "assistant",
                 // content: null,
                 tool_calls: [
                     {
-                        id: searchId,
+                        id: message.toolCallId,
                         type: "function" as const,
                         function: {
                             name: "searchAnki",
@@ -375,21 +434,19 @@ function formatConversationHistory(
             });
             result.push({
                 role: "tool",
-                tool_call_id: searchId,
+                tool_call_id: message.toolCallId,
                 content: JSON.stringify({
                     results: message.results,
                     ...(message.error && { error: message.error }),
                 }),
             });
         } else if (message.type === "card_proposal") {
-            // Format as proper tool call and result using preserved IDs
-            const proposeId = message.toolCallId;
             result.push({
                 role: "assistant",
                 // content: null,
                 tool_calls: [
                     {
-                        id: proposeId,
+                        id: message.toolCallId,
                         type: "function" as const,
                         function: {
                             name: "proposeCards",
@@ -400,7 +457,7 @@ function formatConversationHistory(
             });
             result.push({
                 role: "tool",
-                tool_call_id: proposeId,
+                tool_call_id: message.toolCallId,
                 content: JSON.stringify(
                     message.error
                         ? { error: message.error }
@@ -409,6 +466,26 @@ function formatConversationHistory(
                                 "Cards valid. The assistant may now add a follow-up comment if needed. ",
                         },
                 ),
+            });
+        } else if (message.type === "get_notes") {
+            result.push({
+                role: "assistant",
+                // content: null,
+                tool_calls: [
+                    {
+                        id: message.toolCallId,
+                        type: "function" as const,
+                        function: {
+                            name: "getNotes",
+                            arguments: JSON.stringify({ keys: message.keys }),
+                        },
+                    },
+                ],
+            });
+            result.push({
+                role: "tool",
+                tool_call_id: message.toolCallId,
+                content: JSON.stringify(message),
             });
         } else {
             result.push({ role: "user", content: "" });
@@ -525,9 +602,7 @@ async function callLLMWithRetry(
         }
 
         let messageContent: string | null = null;
-        let toolCalls:
-            | OpenAI.Chat.Completions.ChatCompletionMessageToolCall[]
-            | null = null;
+        let toolCalls: OpenAI.Chat.Completions.ChatCompletionMessageToolCall[] = [];
 
         if (responseMessage.content) {
             let contentStr: string;
@@ -543,52 +618,46 @@ async function callLLMWithRetry(
                     .trim();
             }
             // Check if the content looks like a JSON tool call that wasn't properly handled
-            try {
-                if (contentStr.startsWith('{"tool_call":')) {
-                    console.log(
-                        "Detected JSON tool call in content, parsing...",
-                        `${contentStr.substring(0, 100)}...`,
-                    );
+            if (contentStr.startsWith('{"tool_call":')) {
+                try {
+                    console.log(`Detected JSON in content: ${contentStr.substring(0, 100)}...`);
                     toolCalls = JSON.parse(contentStr);
-                } else {
+                } catch (parseError: any) {
+                    console.log("Content is not JSON tool call, treating as regular message");
                     messageContent = contentStr;
                 }
-            } catch (parseError: any) {
-                // If JSON parsing fails, treat as regular content
-                console.log(
-                    "Content is not JSON tool call, treating as regular message",
-                );
+            } else {
                 messageContent = contentStr;
             }
-        } else if (
-            responseMessage.tool_calls &&
-            responseMessage.tool_calls.length > 0
-        ) {
+        }
+        if (responseMessage.tool_calls) {
             toolCalls = responseMessage.tool_calls;
         }
+        if (!messageContent && toolCalls.length === 0) {
+            console.log("No message content or tool calls, returning");
+            return newHistory;
+        }
+        console.log({ messageContent, toolCalls });
 
+        let isDone = true;
         if (messageContent) {
             // Regular content message
             newHistory.push({
                 type: "llm",
                 content: messageContent,
             } as LLMMessage);
-            return newHistory;
-        } else if (toolCalls && toolCalls.length > 0) {
-            let isDone = true;
+        }
+        if (toolCalls.length > 0) {
             for (const toolCall of toolCalls) {
+                const extraContent = (toolCall as any).extra_content;
                 const functionName = toolCall.function.name;
                 const args = JSON.parse(toolCall.function.arguments);
-                console.log(functionName, args);
+                console.log(functionName, args, extraContent);
                 try {
-                    if (functionName === "messageToUser") {
-                        newHistory.push({
-                            type: "llm",
-                            content: args.message,
-                        } as LLMMessage);
-                    } else if (functionName === "searchAnki") {
+                    if (functionName === "searchAnki") {
                         const searchResults = await searchAnki(
                             args.query,
+                            lang,
                             toolCall.id || "0",
                         );
                         newHistory.push(searchResults);
@@ -613,6 +682,14 @@ async function callLLMWithRetry(
                         } else {
                             isDone = !!cardProposal.error && retryCount++ >= 3;
                         }
+                    } else if (functionName === "getNotes") {
+                        const noteResult = await getNotes(
+                            args.keys,
+                            lang,
+                            toolCall.id || "0",
+                        );
+                        newHistory.push(noteResult);
+                        isDone = false;
                     } else {
                         throw new Error(`Unknown tool call: ${functionName}`);
                     }
@@ -626,8 +703,8 @@ async function callLLMWithRetry(
                     }
                 }
             }
-            if (isDone) return newHistory;
-        } else {
+        }
+        if (isDone) {
             return newHistory;
         }
     }

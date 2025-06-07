@@ -14,8 +14,8 @@ fieldDescriptions:
   Related: >
     Related words (if any). Try to stay below 4 words.
     Include French and English, e.g. 'le chat (the cat); le chaton (the kitten)'
-    Prioritize special word pairings such as verb+preposition and verb+noun combinations.
-    This field may also be used for listing antonyms and other items in common sets (e.g. seasons).
+    Prioritize antonyms, common alternatives, and special word pairings such as verb+preposition and verb+noun combinations.
+    This field may also be used for listing other items in common sets (e.g. seasons).
 
 requiredFields: [Key, FR, EN]
 

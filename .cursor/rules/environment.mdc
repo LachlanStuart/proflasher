@@ -1,5 +1,5 @@
 ---
-description:
+description: Read this for env var/config information
 globs:
 alwaysApply: false
 ---

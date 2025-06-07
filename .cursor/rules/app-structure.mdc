@@ -10,14 +10,17 @@ alwaysApply: true
   - Key file: [page.tsx](mdc:proflasher/app/chat/page.tsx): The main chat interface
   - Key file: [route.ts](mdc:proflasher/app/api/llm/chat/route.ts): The web API for chat, which includes LLM calls
   - Key file: [route.ts](mdc:proflasher/app/api/anki/route.ts): The web API for Anki (Deprecated - prefer making purpose-specific routes such as [route.ts](mdc:proflasher/app/api/anki/cards/route.ts) )
+  - Key file: @route.ts: The web API for managing Anki cards
+  - Key file: [route.ts](mdc:proflasher/app/api/anki/sync/route.ts): The web API for sync'ing Anki
   - Remember to put `"use client";` at the top of client-side code files.
 - [proflasher/components](mdc:proflasher/components): React components used across the application
   - Key file: [CardProposalMessage.tsx](mdc:proflasher/components/chat/CardProposalMessage.tsx): Chat component for proposed cards
+  - Key file: [Header.tsx](mdc:proflasher/components/Header.tsx)
 - [proflasher/lib](mdc:proflasher/lib): Core functionality and utilities
   - Key file: [ankiConnect.ts](mdc:proflasher/lib/ankiConnect.ts): server-side library for calling Anki via AnkiConnect
   - Key file: [noteTemplates.ts](mdc:proflasher/lib/cardModel/noteTemplates.ts): Flashcard template definitions for different languages
   -
 - [proflasher/styles](mdc:proflasher/styles): CSS and styling files
 - [proflasher/scripts](mdc:proflasher/scripts): Utility scripts for the project
-- [data](mdc:data): Storage for flashcard data (gitignored in actual repo)
+- [data](mdc:data): Storage for flashcard structure and prompts (gitignored in actual repo)
 
