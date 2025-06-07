@@ -39,6 +39,7 @@ interface CardProposalMessage {
     type: "card_proposal";
     cards: RowOrientedCard[];
     error?: string;
+    message?: string;
     toolCallId: string;
 }
 
@@ -129,8 +130,12 @@ If you use this, make sure to limit the note type specific to the current langua
                             required: ["tables"],
                         },
                     },
+                    message: {
+                        type: "string",
+                        description: "Message to show to the user after proposing the cards",
+                    },
                 },
-                required: ["cards"],
+                required: ["cards", "message"],
             },
         },
     },
@@ -176,6 +181,7 @@ async function proposeCards(
     rowCards: RowOrientedCard[],
     lang: string,
     toolCallId: string,
+    message?: string,
 ): Promise<CardProposalMessage> {
     const templates = await getTemplates();
     const template = templates[lang];
@@ -225,9 +231,35 @@ async function proposeCards(
         };
     }
 
+    // Fill in missing optional fields with empty strings
+    const processedCards = rowCards.map(card => {
+        const processedCard = { ...card };
+
+        // Ensure all non-table fields exist
+        const tableColumns = new Set<string>();
+        for (const tableDef of template.tableDefinitions) {
+            tableDef.columns.forEach(col => tableColumns.add(col));
+        }
+
+        // Initialize fields object if it doesn't exist
+        if (!processedCard.fields) {
+            processedCard.fields = {};
+        }
+
+        // Add empty strings for missing non-table fields from fieldDescriptions
+        for (const field of Object.keys(template.fieldDescriptions)) {
+            if (!tableColumns.has(field) && !processedCard.fields[field]) {
+                processedCard.fields[field] = "";
+            }
+        }
+
+        return processedCard;
+    });
+
     return {
         type: "card_proposal",
-        cards: rowCards,
+        cards: processedCards,
+        message,
         toolCallId,
     };
 }
@@ -341,10 +373,10 @@ function formatConversationHistory(
                 result.push({
                     role: "tool",
                     tool_call_id: proposeId,
-                    content: JSON.stringify({
-                        success: !message.error,
-                        ...(message.error && { error: message.error })
-                    })
+                    content: JSON.stringify(message.error
+                        ? { error: message.error }
+                        : { result: "Cards valid. The assistant may now add a follow-up comment if needed. " }
+                    )
                 });
                 break;
             default:
@@ -522,11 +554,22 @@ async function callLLMWithRetry(
                         const cardProposal = await proposeCards(
                             args.cards,
                             lang,
-                            toolCall.id || '0'
+                            toolCall.id || '0',
+                            args.message
                         );
 
                         newHistory.push(cardProposal);
-                        isDone = !!cardProposal.error && retryCount++ >= 3;
+
+                        // If there's a message, add it as a separate assistant message
+                        if (cardProposal.message) {
+                            newHistory.push({
+                                type: "llm",
+                                content: cardProposal.message,
+                            } as LLMMessage);
+                            isDone = true;
+                        } else {
+                            isDone = !!cardProposal.error && retryCount++ >= 3;
+                        }
 
                     } else {
                         throw new Error(`Unknown tool call: ${functionName}`);
