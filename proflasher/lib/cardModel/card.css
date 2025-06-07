@@ -1,89 +1,89 @@
 .bsp-card {
-    font-family: arial;
-    font-size: 20px;
-    line-height: 1.2em;
-    text-align: center;
-    display: flex;
-    flex-direction: column;
-    justify-content: start;
-    align-items: center;
-    min-height: 100vh;
+	font-family: arial;
+	font-size: 20px;
+	line-height: 1.2em;
+	text-align: center;
+	display: flex;
+	flex-direction: column;
+	justify-content: start;
+	align-items: center;
+	min-height: 100vh;
 }
 
 table.pairs_table {
-    margin-top: 1em;
+	margin-top: 1em;
 }
 
 table.pairs_table td {
-    text-align: right;
-    padding-right: 0.25em;
-    min-width: 2.2em;
+	text-align: right;
+	padding-right: 0.25em;
+	min-width: 2.2em;
 }
 
-table.pairs_table td+td {
-    text-align: left;
+table.pairs_table td + td {
+	text-align: left;
 }
 
 table.pairs_table td.usage_notes {
-    text-align: center;
+	text-align: center;
 }
 
 .backData {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
 }
 
 table.field-group-table {
-    font-size: 0.75em;
-    margin-top: 1em;
+	font-size: 0.75em;
+	margin-top: 1em;
 }
 
 table.field-group-table td {
-    text-align: left;
-    padding-right: 0.25em;
-    min-width: 2.2em;
+	text-align: left;
+	padding-right: 0.25em;
+	min-width: 2.2em;
 }
 
-table.field-group-table td+td {
-    text-align: left;
+table.field-group-table td + td {
+	text-align: left;
 }
 
 .speak,
 .speaknow,
 [data-speak] {
-    cursor: pointer;
+	cursor: pointer;
 }
 
 .cloze {
-    font-weight: bold;
-    color: lightgrey;
+	font-weight: bold;
+	color: lightgrey;
 }
 
 .back .cloze {
-    color: #888;
-    font-style: italic;
+	color: #888;
+	font-style: italic;
 }
 
 .front .only-back,
 .back .only-front,
 .hide {
-    display: none;
+	display: none;
 }
 
 /* Common flag styles */
 [class^="flag-"]:after {
-    display: inline-block;
-    width: 2.5rem;
-    text-align: center;
-    white-space: nowrap;
-    box-sizing: border-box;
+	display: inline-block;
+	width: 2.5rem;
+	text-align: center;
+	white-space: nowrap;
+	box-sizing: border-box;
 }
 
 /* English flag */
 .flag-en:after {
-    content: "EN";
-    color: #ce1124;
-    background-color: #ffffff;
+	content: "EN";
+	color: #ce1124;
+	background-color: #ffffff;
 }
