@@ -1,6 +1,8 @@
 # Proflasher: AI-Powered Language Learning Flashcard Generator
 
-![Logo: a cartoon lizard holding open its trenchcoat, revealing cards of various languages](docs/logo.png)
+<p align="center">
+  <img alt="Logo: a cartoon lizard holding open its trenchcoat, revealing cards of various languages" src="docs/logo.png" />
+</p>
 
 ## Project Overview
 
@@ -11,11 +13,11 @@ This is bundled with a rich card template, with the following features:
 * Reference tables
 * Automatic and manual text-to-speech
 
-
-
 ## Screenshot
 
-![A screenshot of a chat interface where the AI assistant has searched for a card and proposed a change to it, per the user's instructions](docs/screenshot.png)
+<p align="center">
+  <img alt="A screenshot of a chat interface where the AI assistant has searched for a card and proposed a change to it, per the user's instructions" src="docs/screenshot.png" />
+</p>
 
 
 ## Requirements
@@ -107,8 +109,11 @@ But Anki can't handle dynamically configured fields, so under the hood they're s
 
 The full tables are included on the back:
 
-![Example front of a card](docs/ExampleFront.PNG) ![Example back of a card](docs/ExampleBack.PNG)
 
+<p align="center">
+  <img alt="Example front of a card" src="docs/ExampleFront.png" />
+  <img alt="Example back of a card" src="docs/ExampleBack.png" />
+</p>
 
 There can be multiple tables per note type, which can be used for adding conjugation tables, etc. for quick reference.
 Using [data.example/fr/note.yaml](/data.example/fr/note.yaml) as an example:
