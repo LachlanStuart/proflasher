@@ -1,0 +1,81 @@
+noteType: FR<->EN
+language: fr
+deckName: Lang::FR
+fieldDescriptions:
+  Key: >
+    Primary key for the card.
+    Use the infinitive/neutral form of the word/phrase in French, as it would appear in a dictionary.
+    If applicable and not overridden by the user, choose the masculine/singular/infinitive form.
+    Suffix with (m) or (f) if applicable.
+  Mnemonic: >
+    Leave blank for straightforward words.
+    May be used for usage notes for words when a word's usage or pragmatic tone differs from its English equivalent.
+    May also be used for listing exceptional cases, e.g. how fressen is only used with animals.
+  Related: >
+    Related words (if any). Try to stay below 4 words.
+    Include French and English, e.g. 'le chat (the cat); le chaton (the kitten)'
+    Prioritize special word pairings such as verb+preposition and verb+noun combinations.
+    This field may also be used for listing antonyms and other items in common sets (e.g. seasons).
+
+requiredFields: [Key, FR, EN]
+
+fieldGroups:
+  - [FR, EN]
+  - [ExtraFR, ExtraEN]
+
+fieldLangs:
+  FR: fr
+  EN: en
+  ExtraFR: fr
+  ExtraEN: en
+
+tableDefinitions:
+  - name: main
+    description: Main vocabulary with word and example sentences.
+    columns: [FR, EN]
+    columnDescriptions:
+      FR: French text (words, phrases, or sentences)
+      EN: English translation or equivalent
+    rowDescriptions:
+      Word: >-
+        The word/phrase.
+        Only include a single form in FR. Include the minimum number of EN translations to give the gist of the word.
+        For verbs, use infinitive form and prefix it with "to" in EN.
+        For other word types, use the gender & number that was provided, or default to masculine/singular.
+        Only include a (f) or (pl) suffix in English if it's relevant.
+      Sentence1: First example sentence showing usage
+      Sentence2: Second example sentence for context
+      Sentence3: Third example sentence for variety
+  - name: extra
+    description: Optional conjugations for verbs or declinations for adjectives. Leave this empty for other word types.
+    columns: [ExtraFR, ExtraEN]
+    columnDescriptions:
+      ExtraFR: French conjugations or declensions
+      ExtraEN: English descriptions or translations of the forms
+    rowDescriptions:
+      Dict: (verbs only) Infinitive form e.g. 'faire/to do'
+      1S: (verbs only) First-person singular present form e.g. 'je fais/I do'
+      2S: (verbs only) Second-person singular present form e.g. 'tu fais/you do'
+      3S: (verbs only) Third-person singular present form e.g. 'il fait/he does'
+      3P: (verbs only) Third-person plural present form e.g. 'ils font/they do'
+      Past: (verbs only) Past infinitive form e.g. 'avoir fait/to have done'
+      PC1: (verbs only) First-person passé composé e.g. 'j'ai fait/I have done'
+      PC3: (verbs only) Third-person passé composé e.g. 'il a fait/he has done'
+      MS: (adjectives only) Masculine singular form, with hard-coded value in ExtraEN e.g. 'grand/M. Sg.'
+      FS: (adjectives only) Feminine singular form, with hard-coded value in ExtraFR e.g. 'grande/F. Sg.'
+      MP: (adjectives only) Masculine plural form, with hard-coded value in ExtraFR e.g. 'grands/M. Pl.'
+      FP: (adjectives only) Feminine plural form, with hard-coded value in ExtraFR e.g. 'grandes/F. Pl.'
+
+cardDescriptions:
+  FR->EN: French to English
+  EN->FR: English to French
+
+cards:
+  FR->EN:
+    rows:
+      - { flag: "flag-fr", field: "FR", attrs: 'lang="fr" class="prompt speaknow"' }
+      - { flag: "flag-en", field: "EN", attrs: 'lang="en" class="response"' }
+  EN->FR:
+    rows:
+      - { flag: "flag-en", field: "EN", attrs: 'lang="en" class="prompt"' }
+      - { flag: "flag-fr", field: "FR", attrs: 'lang="fr" class="response speaknow"' }

@@ -1,0 +1,24 @@
+/* Chinese flags */
+.flag-zh:after {
+    content: "中文";
+    color: #ffde00;
+    background-color: #de2910;
+    text-shadow: none;
+    font-family: "Noto Sans SC", "Microsoft YaHei", sans-serif;
+}
+
+.flag-py:after {
+    content: "ZH";
+    color: #ffde00;
+    background-color: #de2910;
+}
+
+/* Chinese text styles */
+[lang="zh"] {
+    font-family: "Noto Sans SC", "Microsoft YaHei", sans-serif;
+}
+
+.bigtext {
+    font-size: 36px;
+    line-height: 40px;
+}

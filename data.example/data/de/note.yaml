@@ -1,0 +1,59 @@
+noteType: DE<->EN
+language: de
+deckName: Lang::DE
+fieldDescriptions:
+  Key: >
+    Primary key for the card.
+    Use the infinitive/neutral form of the word/phrase in German, as it would appear in a dictionary.
+  Mnemonic: >
+    Leave blank for straightforward words.
+    May be used for usage notes for words when a word's usage or pragmatic tone differs from its English equivalent.
+    May also be used for listing exceptional cases, e.g. how fressen is only used with animals.
+  Related: >
+    Related words (if any). Try to stay below 4 words.
+    Include German and English, e.g. 'die Katze (the cat); das Meerschweinchen (the hamster)'
+    Prioritize special word pairings such as verb+preposition and verb+noun combinations.
+    This field may also be used for listing antonyms and other items in common sets (e.g. seasons).
+
+requiredFields: [Key, DE, EN]
+
+fieldGroups:
+  - [DE, EN]
+
+fieldLangs:
+  DE: de
+  EN: en
+
+tableDefinitions:
+  - name: main
+    description: Main vocabulary with word and example sentences
+    columns: [DE, EN]
+    columnDescriptions:
+      DE: German text (words, phrases, or sentences)
+      EN: English translation or equivalent
+    rowDescriptions:
+      Word: >
+        The word/phrase.
+        For reflexive verbs, use the first or second person so that the case is clear, e.g. "ich stelle mir vor"/"I imagine" (the English should match the German).
+        If a verb is typically used with a preposition, include it, and add a simple object so that the case is clear, e.g. "Ich erinnere mich an diesen Baum."/"I remember that tree." (prefer a masculine object with a definite article so that the case is obvious).
+        For other verbs, use the infinitive form of the verb e.g. "können"/"to be able to" (remember the "to" prefix in English)
+        For nouns, the dictionary form should also include their nominative case article, and use shorthand to indicate the plural form in parentheses, e.g. "der Strand (-¨e)".
+        When there are multiple English translations for the word/phrase, use a comma to separate them, but keep the list minimal.
+        Avoid providing more than 3 English translations for a word.
+      Sentence1: First example sentence showing usage
+      Sentence2: Second example sentence for context
+      Sentence3: Third example sentence for variety
+
+cardDescriptions:
+  DE->EN: German to English
+  EN->DE: English to German
+
+cards:
+  DE->EN:
+    rows:
+      - { flag: "flag-de", field: "DE", attrs: 'lang="de" class="prompt speaknow"' }
+      - { flag: "flag-en", field: "EN", attrs: 'lang="en" class="response"' }
+  EN->DE:
+    rows:
+      - { flag: "flag-en", field: "EN", attrs: 'lang="en" class="prompt"' }
+      - { flag: "flag-de", field: "DE", attrs: 'lang="de" class="response speaknow"' }

@@ -1,0 +1,67 @@
+noteType: JP<->EN
+language: jp
+deckName: Lang::JP
+fieldDescriptions:
+  Key: >
+    Primary key for the card.
+    Use the infinitive/neutral/informal form of the word/phrase in Japanese, as it would appear in a dictionary.
+  Mnemonic: >
+    Leave blank for straightforward words.
+    May be used for usage notes for words when a word's usage or pragmatic tone differs from its English equivalent.
+    May also be used for listing exceptions.
+  Related: >
+    Related words (if any). Try to stay below 4 words.
+    Include Japanese, Kana and English, e.g. '春 (はる) spring, 夏 (なつ) summer'
+    Prioritize antonyms and special word pairings such as verb+preposition and verb+noun combinations.
+    This field may also be used for listing other items in common sets (e.g. seasons).
+
+requiredFields: [Key, JP, EN]
+
+fieldGroups:
+  - [JP, Kana, EN]
+
+fieldLangs:
+  JP: jp
+  Kana: jp
+  EN: en
+
+tableDefinitions:
+  - name: main
+    description: Main vocabulary with word and example sentences
+    columns: [JP, Kana, EN]
+    columnDescriptions:
+      JP: Japanese text (kanji, hiragana, katakana)
+      Kana: Kana reading (hiragana or katakana)
+      EN: English translation or equivalent
+    rowDescriptions:
+      Word: >
+        The word/phrase.
+        For verbs, use the infinitive form of the verb e.g. "行く"/"to go" (remember the "to" prefix in English)
+        Include a preposition if one is typically used with the verb, e.g. "友達に会う"/"to meet a friend"
+        When there are multiple English translations for the word/phrase, use a comma to separate them, but keep the list minimal.
+        Avoid providing more than 3 English translations for a word.
+      Sentence1: First example sentence showing usage
+      Sentence2: Second example sentence for context
+      Sentence3: Third example sentence for variety
+
+cardDescriptions:
+  JP->EN: Japanese to English
+  Kana->EN: Kana to English
+  EN->JP: English to Japanese
+
+cards:
+  JP->EN:
+    rows:
+      - { flag: "flag-jp", field: "JP", attrs: 'lang="jp" class="prompt speakback bigtext"' }
+      - { flag: "flag-jp", field: "Kana", attrs: 'lang="jp" class="response"' }
+      - { flag: "flag-en", field: "EN", attrs: 'lang="en" class="response"' }
+  Kana->EN:
+    rows:
+      - { flag: "flag-jp", field: "Kana", attrs: 'lang="jp" class="prompt speaknow"' }
+      - { flag: "flag-jp", field: "JP", attrs: 'lang="jp" class="response bigtext"' }
+      - { flag: "flag-en", field: "EN", attrs: 'lang="en" class="response"' }
+  EN->JP:
+    rows:
+      - { flag: "flag-en", field: "EN", attrs: 'lang="en" class="prompt"' }
+      - { flag: "flag-jp", field: "JP", attrs: 'lang="jp" class="response speakback bigtext"' }
+      - { flag: "flag-jp", field: "Kana", attrs: 'lang="jp" class="response"' }

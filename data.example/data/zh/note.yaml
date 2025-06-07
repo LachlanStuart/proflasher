@@ -1,0 +1,71 @@
+noteType: ZH<->EN
+language: zh
+deckName: Lang::ZH
+fieldDescriptions:
+  Key: >
+    Primary key for the card.
+    Use the dictionary form of the word/phrase in Chinese, as it would appear in a dictionary.
+  HasHant: Whether the word/phrase has a different traditional form to its simplified form. Set to "Y" if so, leave blank if not.
+  Mnemonic: >
+    Leave blank for straightforward words.
+    May be used for usage notes for words when a word's usage or pragmatic tone differs from its English equivalent.
+    May also be used for listing exceptions.
+    When using Chinese characters, also include their pinyin readings in parentheses.
+  Related: >
+    Related words (if any). Try to stay below 4 words.
+    Include Chinese, Pinyin and English for each, e.g. '春天 (chūntiān) spring, 夏天 (xiàtiān) summer'
+    Prioritize antonyms and special word pairings such as verb+preposition and verb+noun combinations.
+    This field may also be used for listing other items in common sets (e.g. seasons).
+
+requiredFields: [Key, ZH, EN]
+
+fieldGroups:
+  - [ZH, Hant, Pinyin, EN]
+
+fieldLangs:
+  ZH: zh
+  Hant: zh
+  Pinyin: zh
+  EN: en
+
+tableDefinitions:
+  - name: main
+    description: Main vocabulary with word and example sentences
+    columns: [ZH, Hant, Pinyin, EN]
+    columnDescriptions:
+      ZH: Simplified Chinese characters
+      Hant: Traditional Chinese characters
+      Pinyin: Pinyin romanization with tone marks
+      EN: English translation or equivalent
+    rowDescriptions:
+      Word: >
+        The word/phrase.
+        If it's always used in a specific construction, use a minimum example and keep the English in sync.
+      Sentence1: First example sentence showing usage
+      Sentence2: Second example sentence for context
+      Sentence3: Third example sentence for variety
+
+cardDescriptions:
+  ZH->EN: Simplified Chinese to English
+  Hant->EN: Traditional Chinese to English
+  EN->ZH: English to Chinese
+
+cards:
+  ZH->EN:
+    rows:
+      - { flag: "flag-zh", field: "ZH", attrs: 'lang="zh" class="prompt speakback bigtext"' }
+      - { flag: "flag-zh", field: "Hant", attrs: 'lang="zh" class="response speakme back-only bigtext"' }
+      - { flag: "flag-zh", field: "Pinyin", attrs: 'lang="zh" class="response"' }
+      - { flag: "flag-en", field: "EN", attrs: 'lang="en" class="response"' }
+  Hant->EN:
+    rows:
+      - { flag: "flag-zh", field: "Hant", attrs: 'lang="zh" class="prompt speakback bigtext"' }
+      - { flag: "flag-zh", field: "ZH", attrs: 'lang="zh" class="response speakme back-only bigtext"' }
+      - { flag: "flag-zh", field: "Pinyin", attrs: 'lang="zh" class="response"' }
+      - { flag: "flag-en", field: "EN", attrs: 'lang="en" class="response"' }
+  EN->ZH:
+    rows:
+      - { flag: "flag-en", field: "EN", attrs: 'lang="en" class="prompt"' }
+      - { flag: "flag-zh", field: "ZH", attrs: 'lang="zh" class="response speakback bigtext"' }
+      - { flag: "flag-zh", field: "Hant", attrs: 'lang="zh" class="response speakme back-only bigtext"' }
+      - { flag: "flag-zh", field: "Pinyin", attrs: 'lang="zh" class="response"' }

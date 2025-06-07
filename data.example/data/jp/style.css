@@ -1,0 +1,33 @@
+/* Japanese flags */
+.flag-jp:after {
+    content: "日本語";
+    color: #bc002d;
+    background-color: #ffffff;
+    text-shadow: none;
+    font-family: "Noto Sans JP", "Hiragino Sans", sans-serif;
+    font-size: 13px;
+    letter-spacing: -1px;
+    line-height: 24px;
+    padding-right: 2px;
+}
+
+.flag-kana:after {
+    content: "仮名";
+    color: #de2910;
+    background-color: #ffffff;
+    font-size: 13px;
+    letter-spacing: -1px;
+    line-height: 24px;
+    padding-right: 2px;
+}
+
+/* Japanese text styles */
+[lang="jp"] {
+    font-family: "Noto Sans JP", "Hiragino Sans", sans-serif;
+}
+
+/* Japanese font size adjustments */
+.bigtext {
+    font-size: 36px;
+    line-height: 40px;
+}
