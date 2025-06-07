@@ -1,53 +1,48 @@
 {
-    "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
-    "vcs": {
-        "enabled": true,
-        "clientKind": "git",
-        "useIgnoreFile": true
-    },
-    "files": {
-        "ignoreUnknown": false,
-        "ignore": []
-    },
-    "formatter": {
-        "enabled": true
-    },
-    "organizeImports": {
-        "enabled": true
-    },
-    "linter": {
-        "enabled": true,
-        "ignore": [
-            "lib/cardModel/card.js"
-        ],
-        "rules": {
-            "a11y": {
-                "all": false
-            },
-            "nursery": {
-                "useSortedClasses": {
-                    "level": "warn",
-                    "fix": "safe",
-                    "options": {
-                        "functions": [
-                            "clsx",
-                            "cva",
-                            "cn"
-                        ]
-                    }
-                }
-            },
-            "style": {
-                "noNonNullAssertion": "off"
-            },
-            "suspicious": {
-                "noExplicitAny": "off",
-                "noArrayIndexKey": "off"
-            },
-            "complexity": {
-                "all": false
-            },
-            "recommended": true
-        }
-    }
+	"$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+	"vcs": {
+		"enabled": true,
+		"clientKind": "git",
+		"useIgnoreFile": true
+	},
+	"files": {
+		"ignoreUnknown": false,
+		"ignore": []
+	},
+	"formatter": {
+		"enabled": true
+	},
+	"organizeImports": {
+		"enabled": true
+	},
+	"linter": {
+		"enabled": true,
+		"ignore": ["lib/cardModel/card.js"],
+		"rules": {
+			"a11y": {
+				"all": false
+			},
+			"nursery": {
+				"useSortedClasses": {
+					"level": "warn",
+					"fix": "safe",
+					"options": {
+						"functions": ["clsx", "cva", "cn"]
+					}
+				}
+			},
+			"style": {
+				"noNonNullAssertion": "off",
+				"noUselessElse": "off"
+			},
+			"suspicious": {
+				"noExplicitAny": "off",
+				"noArrayIndexKey": "off"
+			},
+			"complexity": {
+				"all": false
+			},
+			"recommended": true
+		}
+	}
 }
