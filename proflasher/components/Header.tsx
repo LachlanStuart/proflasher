@@ -29,7 +29,7 @@ export default function Header() {
                             <select
                                 value={language}
                                 onChange={(e) => setLanguage(e.target.value)}
-                                className="rounded bg-gray-700 px-3 py-1 text-white"
+                                className="rounded bg-gray-700 px-3 py-1 mr-8 text-white"
                             >
                                 {availableLanguages.map((lang) => (
                                     <option key={lang} value={lang}>

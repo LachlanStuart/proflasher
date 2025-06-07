@@ -48,7 +48,7 @@ export function GetNotesMessage({ message }: GetNotesMessageProps) {
         // Handle error case
         if (noteInfo.error) {
             return (
-                <div key={index} className="mb-3 border-gray-200 border-b pb-3 last:border-b-0">
+                <div key={index} className="mb-3 border-gray-200 border-b last:border-b-0">
                     <div className="mb-1">
                         <span className="font-bold text-gray-700">Key:</span> {key}
                     </div>
@@ -60,7 +60,7 @@ export function GetNotesMessage({ message }: GetNotesMessageProps) {
         // Handle successful note retrieval
         if (!noteInfo || !noteInfo[0]) {
             return (
-                <div key={index} className="mb-3 border-gray-200 border-b pb-3 last:border-b-0">
+                <div key={index} className="mb-3 border-gray-200 border-b last:border-b-0">
                     <div className="mb-1">
                         <span className="font-bold text-gray-700">Key:</span> {key}
                     </div>
@@ -73,7 +73,7 @@ export function GetNotesMessage({ message }: GetNotesMessageProps) {
         const fieldEntries = note.fields ? Object.entries(note.fields) : [];
 
         return (
-            <div key={index} className="mb-3 border-gray-200 border-b pb-3 last:border-b-0">
+            <div key={index} className="mb-3 border-gray-200 border-b last:border-b-0">
                 <div className="mb-2 flex items-center justify-between">
                     <div>
                         <span className="font-bold text-gray-700">Key:</span> {key}
@@ -153,25 +153,20 @@ export function GetNotesMessage({ message }: GetNotesMessageProps) {
             <div className="max-w-[80%] rounded-lg border-purple-400 border-l-4 bg-gray-100 px-4 py-2 text-gray-600">
                 <div className="font-mono text-sm">
                     <div className="mb-1 font-bold text-purple-600">
-                        📝 Note Details ({message.keys.length} note{message.keys.length !== 1 ? 's' : ''})
+                        📝 Searched for {message.keys.length} note{message.keys.length !== 1 ? 's' : ''}
                     </div>
 
                     {message.error && (
                         <div className="mt-2 text-red-500">Error: {message.error}</div>
                     )}
 
-                    {message.noteInfos && (
+                    {Array.isArray(message.noteInfos) && (
                         <div className="mt-2 border-gray-300 border-t pt-2">
-                            {message.keys.map((key, index) => {
-                                const noteInfo = Array.isArray(message.noteInfos)
-                                    ? message.noteInfos[index]
-                                    : null;
-                                return renderNote(noteInfo, key, index);
-                            })}
+                            {message.keys.map((key, index) => renderNote(message.noteInfos![index], key, index))}
                         </div>
                     )}
 
-                    {!message.noteInfos && !message.error && (
+                    {!Array.isArray(message.noteInfos) && !message.error && (
                         <div className="mt-2 text-gray-500">No note information available</div>
                     )}
                 </div>

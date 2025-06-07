@@ -117,8 +117,10 @@ Example queries:
         type: "function",
         function: {
             name: "proposeCards",
-            description:
-                "Propose new flashcards. The user will have the option to confirm or reject the cards, so don't ask before calling this.",
+            description: (
+                "Propose new flashcards or replacements for existing flashcards (overwritten by Key). "
+                + "The user will have the option to confirm or reject the cards, so don't ask before calling this."
+            ),
             parameters: {
                 type: "object",
                 properties: {
@@ -130,7 +132,7 @@ Example queries:
                             properties: {
                                 fields: {
                                     type: "object",
-                                    description: "Non-table fields like Key, Mnemonic, Related",
+                                    description: "Non-table fields like Key, UsageNotes, Related",
                                     additionalProperties: {
                                         type: "string",
                                     },

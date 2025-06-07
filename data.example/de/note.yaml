@@ -5,7 +5,7 @@ fieldDescriptions:
   Key: >
     Primary key for the card.
     Use the infinitive/neutral form of the word/phrase in German, as it would appear in a dictionary.
-  Mnemonic: >
+  UsageNotes: >
     Leave blank for straightforward words.
     May be used for usage notes for words when a word's usage or pragmatic tone differs from its English equivalent.
     May also be used for listing exceptional cases, e.g. how fressen is only used with animals.

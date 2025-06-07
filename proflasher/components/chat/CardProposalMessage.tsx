@@ -107,12 +107,6 @@ export function CardProposalMessage({
     return (
         <div className="mb-4 flex">
             <div className="w-full max-w-[95%] rounded-lg border border-green-200 bg-green-50 px-4 py-3">
-                {message.beforeCardsMessageToUser && (
-                    <div className="mb-3 text-green-700">
-                        {message.beforeCardsMessageToUser}
-                    </div>
-                )}
-
                 <div className="mb-2 flex items-center justify-between">
                     <div className="font-bold text-green-700">
                         💡 Card Proposal ({selectedCard + 1}/{editedRowCards.length})
@@ -131,7 +125,7 @@ export function CardProposalMessage({
                                 <button
                                     onClick={goToPreviousCard}
                                     disabled={selectedCard === 0}
-                                    className="rounded bg-gray-200 px-3 py-1 text-gray-700 disabled:bg-gray-100 disabled:text-gray-400"
+                                    className="rounded bg-gray-200 text-gray-700 px-3 py-1 disabled:bg-gray-100 disabled:text-gray-400"
                                 >
                                     &lt;
                                 </button>
@@ -139,7 +133,7 @@ export function CardProposalMessage({
                                     <button
                                         key={index}
                                         onClick={() => setSelectedCard(index)}
-                                        className="rounded bg-green-600 px-3 py-1 text-white disabled:bg-gray-200 disabled:text-gray-700"
+                                        className="rounded bg-gray-200 text-gray-700 px-3 py-1 disabled:bg-green-600 disabled:text-white"
                                         disabled={selectedCard === index}
                                     >
                                         {index + 1}
@@ -148,7 +142,7 @@ export function CardProposalMessage({
                                 <button
                                     onClick={goToNextCard}
                                     disabled={selectedCard === editedRowCards.length - 1}
-                                    className="rounded bg-gray-200 px-3 py-1 text-gray-700 disabled:bg-gray-100 disabled:text-gray-400"
+                                    className="rounded bg-gray-200 text-gray-700 px-3 py-1 disabled:bg-gray-100 disabled:text-gray-400"
                                 >
                                     &gt;
                                 </button>
@@ -175,6 +169,7 @@ export function CardProposalMessage({
                         {/* Card type selection and Add button in same row */}
                         <div className="flex items-center justify-between gap-4">
                             <div className="flex flex-wrap gap-2">
+                                <h3 className="font-semibold text-gray-700">Card types:</h3>
                                 {Object.entries(template.cardDescriptions).map(
                                     ([type, description]) => (
                                         <label key={type} className="flex items-center gap-1">

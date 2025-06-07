@@ -6,7 +6,7 @@ fieldDescriptions:
     Primary key for the card.
     Use the dictionary form of the word/phrase in Chinese, as it would appear in a dictionary.
   HasHant: Whether the word/phrase has a different traditional form to its simplified form. Set to "Y" if so, leave blank if not.
-  Mnemonic: >
+  UsageNotes: >
     Leave blank for straightforward words.
     May be used for usage notes for words when a word's usage or pragmatic tone differs from its English equivalent.
     May also be used for listing exceptions.

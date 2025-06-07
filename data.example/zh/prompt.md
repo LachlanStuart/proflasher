@@ -14,7 +14,7 @@ When there are multiple English translations for the word/phrase, use a comma to
 Avoid providing more than 3 English translations for a word.
 If there are any special word pairings such as verb+preposition or verb+noun combinations, put these in the Related field with the English translation.
 The related field may also be used for listing antonyms, other items in common sets (e.g. seasons), but focus on the most important ones and try to stay below 4 words.
-Don't repeat any information into the Mnemonic field. It's fine to leave it blank for simple words. It may have brief usage notes when words are particularly different from English.
+Don't repeat any information into the UsageNotes field. It's fine to leave it blank for simple words. It may have brief usage notes when words are particularly different from English.
 
 
 # User's preferences
