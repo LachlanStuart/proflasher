@@ -71,6 +71,7 @@ Example queries:
 - Cards that the user has had difficulty with: "prop:lapses>4"
 - Active cards that the user has seen many times: "prop:reps>15 -is:suspended"
 - Cards containing the word "beyond": "beyond" (searches without a colon are free text search)
+- List all cards: "" (empty string query)
 `,
             parameters: {
                 type: "object",
@@ -175,12 +176,7 @@ async function searchAnki(query: string, lang: string, toolCallId: string): Prom
         // Simplify results to only show Key field to reduce verbosity
         const simplifiedResults = fullResults.map((note) => {
             const keyField = note.fields?.Key?.value;
-            return {
-                id: note.noteId,
-                key: keyField,
-                // Include model name if available
-                ...(note.modelName && { modelName: note.modelName }),
-            };
+            return { Key: keyField };
         });
 
         return {
@@ -632,7 +628,7 @@ async function callLLMWithRetry(
                                 content: cardProposal.message,
                             } as LLMMessage);
                         }
-                        isDone = true;
+                        isDone = !!cardProposal.error || retryCount++ >= 3;
                     } else {
                         throw new Error(`Unknown tool call: ${functionName}`);
                     }
