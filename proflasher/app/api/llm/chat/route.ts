@@ -428,13 +428,7 @@ function formatConversationHistory(
             result.push({
                 role: "tool",
                 tool_call_id: message.toolCallId,
-                content: JSON.stringify(
-                    message.error
-                        ? { error: message.error }
-                        : {
-                              result: "Cards valid. The assistant may now add a follow-up comment if needed. ",
-                          },
-                ),
+                content: JSON.stringify(message.error ? { error: message.error } : { result: "Cards proposed." }),
             });
         } else if (message.type === "get_notes") {
             result.push({
@@ -622,6 +616,10 @@ async function callLLMWithRetry(
                         const searchResults = await searchAnki(args.query, lang, toolCall.id || "0");
                         newHistory.push(searchResults);
                         isDone = false;
+                    } else if (functionName === "getNotes") {
+                        const noteResult = await getNotes(args.keys, lang, toolCall.id || "0");
+                        newHistory.push(noteResult);
+                        isDone = false;
                     } else if (functionName === "proposeCards") {
                         const cardProposal = await proposeCards(args.cards, lang, toolCall.id || "0", args.message);
 
@@ -633,14 +631,8 @@ async function callLLMWithRetry(
                                 type: "llm",
                                 content: cardProposal.message,
                             } as LLMMessage);
-                            isDone = true;
-                        } else {
-                            isDone = !!cardProposal.error && retryCount++ >= 3;
                         }
-                    } else if (functionName === "getNotes") {
-                        const noteResult = await getNotes(args.keys, lang, toolCall.id || "0");
-                        newHistory.push(noteResult);
-                        isDone = false;
+                        isDone = true;
                     } else {
                         throw new Error(`Unknown tool call: ${functionName}`);
                     }
