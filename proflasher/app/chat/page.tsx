@@ -15,8 +15,6 @@ import { useFlashcard } from "~/lib/context/FlashcardContext";
 // LLM model name
 const LLM_MODEL_NAME = "gemini-2.5-flash-preview-04-17";
 
-
-
 // Message types for conversation history
 interface UserMessageType {
     type: "user";
@@ -57,7 +55,13 @@ interface CardAdditionSummaryType {
     type: "card_addition_summary";
     successes: Array<{ noteId: number; key: string }>;
     errors: Array<{ key: string; error: string }>;
-    duplicates: Array<{ noteId: number; key: string; fields: Record<string, string>; modelName: string; activeCardTypes: string[] }>;
+    duplicates: Array<{
+        noteId: number;
+        key: string;
+        fields: Record<string, string>;
+        modelName: string;
+        activeCardTypes: string[];
+    }>;
     updates: Array<{ noteId: number; key: string }>;
 }
 
@@ -69,8 +73,6 @@ type ConversationMessage =
     | CardProposalMessageType
     | GetNotesMessageType
     | CardAdditionSummaryType;
-
-
 
 export default function ChatPage() {
     const [messages, setMessages] = useState<ConversationMessage[]>([]);
@@ -112,8 +114,7 @@ export default function ChatPage() {
             return await response.json();
         } catch (error) {
             console.error("Error calling LLM API:", error);
-            const errorMessage =
-                error instanceof Error ? error.message : String(error);
+            const errorMessage = error instanceof Error ? error.message : String(error);
 
             // Return the conversation with an error message
             return [
@@ -263,7 +264,7 @@ export default function ChatPage() {
                 ...summary,
                 updates: [...summary.updates, { noteId, key: fields.Key || `Note ${noteId}` }],
                 // Remove from duplicates if it was there
-                duplicates: summary.duplicates.filter(d => d.noteId !== noteId),
+                duplicates: summary.duplicates.filter((d) => d.noteId !== noteId),
             };
             updateSummaryMessage(updatedSummary);
         } catch (error) {
@@ -273,21 +274,20 @@ export default function ChatPage() {
             const summary = findOrCreateSummaryMessage();
             const updatedSummary: CardAdditionSummaryType = {
                 ...summary,
-                errors: [...summary.errors, {
-                    key: fields.Key || `Note ${noteId}`,
-                    error: `Update failed: ${error instanceof Error ? error.message : String(error)}`
-                }],
+                errors: [
+                    ...summary.errors,
+                    {
+                        key: fields.Key || `Note ${noteId}`,
+                        error: `Update failed: ${error instanceof Error ? error.message : String(error)}`,
+                    },
+                ],
             };
             updateSummaryMessage(updatedSummary);
         }
     };
 
     // Handle adding card to Anki
-    const handleAddToAnki = async (
-        card: Record<string, string>,
-        modelName: string,
-        activeCardTypes: string[],
-    ) => {
+    const handleAddToAnki = async (card: Record<string, string>, modelName: string, activeCardTypes: string[]) => {
         try {
             // Add note to Anki via server API
             const response = await fetch("/api/anki/cards", {
@@ -309,13 +309,16 @@ export default function ChatPage() {
                 const summary = findOrCreateSummaryMessage();
                 const updatedSummary: CardAdditionSummaryType = {
                     ...summary,
-                    duplicates: [...summary.duplicates, {
-                        noteId: data.noteId,
-                        key: card.Key || `Note ${data.noteId}`,
-                        fields: card,
-                        modelName,
-                        activeCardTypes,
-                    }],
+                    duplicates: [
+                        ...summary.duplicates,
+                        {
+                            noteId: data.noteId,
+                            key: card.Key || `Note ${data.noteId}`,
+                            fields: card,
+                            modelName,
+                            activeCardTypes,
+                        },
+                    ],
                 };
                 updateSummaryMessage(updatedSummary);
                 return;
@@ -345,10 +348,13 @@ export default function ChatPage() {
             const summary = findOrCreateSummaryMessage();
             const updatedSummary: CardAdditionSummaryType = {
                 ...summary,
-                errors: [...summary.errors, {
-                    key: card.Key || 'Unknown card',
-                    error: error instanceof Error ? error.message : String(error)
-                }],
+                errors: [
+                    ...summary.errors,
+                    {
+                        key: card.Key || "Unknown card",
+                        error: error instanceof Error ? error.message : String(error),
+                    },
+                ],
             };
             updateSummaryMessage(updatedSummary);
         }
@@ -359,19 +365,13 @@ export default function ChatPage() {
             {/* Message container */}
             <div className="mb-4 flex-1 overflow-y-auto rounded border bg-gray-50 p-4">
                 {messages.length === 0 ? (
-                    <div className="p-4 text-center text-gray-400">
-                        Start a conversation by typing a message below.
-                    </div>
+                    <div className="p-4 text-center text-gray-400">Start a conversation by typing a message below.</div>
                 ) : (
                     messages.map((message, index) => {
                         switch (message.type) {
                             case "user":
                                 return (
-                                    <UserMessage
-                                        key={index}
-                                        message={message}
-                                        onRewind={() => handleRewind(index)}
-                                    />
+                                    <UserMessage key={index} message={message} onRewind={() => handleRewind(index)} />
                                 );
                             case "llm":
                                 return <LLMMessage key={index} message={message} />;
@@ -383,11 +383,7 @@ export default function ChatPage() {
                                 return <GetNotesMessage key={index} message={message} />;
                             case "card_proposal":
                                 return (
-                                    <CardProposalMessage
-                                        key={index}
-                                        message={message}
-                                        onAddToAnki={handleAddToAnki}
-                                    />
+                                    <CardProposalMessage key={index} message={message} onAddToAnki={handleAddToAnki} />
                                 );
 
                             case "card_addition_summary":

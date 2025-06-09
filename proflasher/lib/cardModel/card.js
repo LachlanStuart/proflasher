@@ -52,9 +52,7 @@ function debugVoiceChooser(cardEl, lang) {
         debugSpeech.id = "debugSpeech";
         cardEl.appendChild(debugSpeech);
     }
-    let voices = window.speechSynthesis
-        .getVoices()
-        .filter((v) => v.lang.startsWith(fullLangs[lang]));
+    let voices = window.speechSynthesis.getVoices().filter((v) => v.lang.startsWith(fullLangs[lang]));
     if (voices.length === 0) {
         debugLog(`No voices found for ${lang}`);
         voices = window.speechSynthesis.getVoices();
@@ -100,9 +98,7 @@ function $$(selector, root = document) {
                     // characters like \`#\`. Don't use them. More reading:
                     // https://mathiasbynens.be/notes/css-escapes .
 
-                    const m = Array.from(string.matchAll(/([\\.#]?[^\\s#.]+)/g)).map(
-                        (match) => match[0],
-                    );
+                    const m = Array.from(string.matchAll(/([\\.#]?[^\\s#.]+)/g)).map((match) => match[0]);
                     if (/^\\.|#/.test(m[0])) e = document.createElement("div");
                     forEach(m, (v) => {
                         const s = v.substring(1, v.length);
@@ -197,8 +193,7 @@ function $$(selector, root = document) {
 
                     cleanupFuncs.push(
                         l((v) => {
-                            if (isNode(v) && r.parentElement)
-                                r.parentElement.replaceChild(v, r), (r = v);
+                            if (isNode(v) && r.parentElement) r.parentElement.replaceChild(v, r), (r = v);
                             else r.textContent = v;
                         }),
                     );
@@ -261,24 +256,17 @@ function speak(event) {
     speech.voice = voice;
     speech.lang = fullLangs[lang];
     speech.volume = 0.75;
-    speech.rate =
-        word !== cardStorage.lastWord ? langRates[lang][0] : langRates[lang][1]; // 0.1 to 9
+    speech.rate = word !== cardStorage.lastWord ? langRates[lang][0] : langRates[lang][1]; // 0.1 to 9
     cardStorage.lastWord = word === cardStorage.lastWord ? null : word;
     speechSynthesis.cancel();
     speechSynthesis.speak(speech);
 }
 
 function runSpeech(cardEl, cardStorage, lang, isBack) {
-    const voices = window.speechSynthesis
-        .getVoices()
-        .filter((v) => v.lang === fullLangs[lang]);
-    cardStorage.voice =
-        voices.find((v) => (voicePreferences[lang] || []).includes(v.name)) ||
-        voices[0];
+    const voices = window.speechSynthesis.getVoices().filter((v) => v.lang === fullLangs[lang]);
+    cardStorage.voice = voices.find((v) => (voicePreferences[lang] || []).includes(v.name)) || voices[0];
 
-    const speakableElements = $$(
-        ".speak,.speakme,.speaknow,.speakchild,[data-speak]",
-    );
+    const speakableElements = $$(".speak,.speakme,.speaknow,.speakchild,[data-speak]");
     speakableElements.forEach((el) => el.addEventListener("click", speak));
     // WORKAROUND: iPhone needs onclick attribute to know the element should handle clicks instead of taps
     speakableElements.forEach((el) => {
@@ -311,9 +299,7 @@ function initCardOptions(cardEl, cardStorage) {
 
     // Process each field group
     cardStorage.fieldGroups.forEach((group, groupIndex) => {
-        const isDisplayed = group.some((f) =>
-            cardEl.querySelector(`[data-field-display="${f}"]`),
-        );
+        const isDisplayed = group.some((f) => cardEl.querySelector(`[data-field-display="${f}"]`));
 
         for (const f of group) {
             cardStorage.fieldData[f] = hiddenCardData
@@ -371,9 +357,7 @@ function runCardOptions(cardEl, cardStorage, lang, isBack) {
                 const value = cardStorage.fieldData[field][i];
                 const lang = cardStorage.fieldLangs[field];
                 const isTargetLang = lang !== "en";
-                tds.push(
-                    h("td", { lang, className: isTargetLang ? "speakme" : "" }, value),
-                );
+                tds.push(h("td", { lang, className: isTargetLang ? "speakme" : "" }, value));
             });
             rows.push(h("tr", { className: "speakchild" }, ...tds));
         }

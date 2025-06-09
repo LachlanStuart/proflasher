@@ -6,29 +6,27 @@ interface CardAdditionSummaryType {
     type: "card_addition_summary";
     successes: Array<{ noteId: number; key: string }>;
     errors: Array<{ key: string; error: string }>;
-    duplicates: Array<{ noteId: number; key: string; fields: Record<string, string>; modelName: string; activeCardTypes: string[] }>;
+    duplicates: Array<{
+        noteId: number;
+        key: string;
+        fields: Record<string, string>;
+        modelName: string;
+        activeCardTypes: string[];
+    }>;
     updates: Array<{ noteId: number; key: string }>;
 }
 
 interface CardAdditionSummaryMessageProps {
     message: CardAdditionSummaryType;
     onShowInAnki: (noteId: number) => void;
-    onUpdate: (
-        modelName: string,
-        fields: Record<string, string>,
-        activeCardTypes: string[],
-        noteId: number,
-    ) => void;
+    onUpdate: (modelName: string, fields: Record<string, string>, activeCardTypes: string[], noteId: number) => void;
 }
 
-export function CardAdditionSummaryMessage({
-    message,
-    onShowInAnki,
-    onUpdate
-}: CardAdditionSummaryMessageProps) {
+export function CardAdditionSummaryMessage({ message, onShowInAnki, onUpdate }: CardAdditionSummaryMessageProps) {
     const [showDetails, setShowDetails] = useState(false);
 
-    const totalCards = message.successes.length + message.errors.length + message.duplicates.length + message.updates.length;
+    const totalCards =
+        message.successes.length + message.errors.length + message.duplicates.length + message.updates.length;
     const needsAction = message.errors.length + message.duplicates.length;
 
     // Generate summary text
@@ -44,10 +42,10 @@ export function CardAdditionSummaryMessage({
             parts.push(`${message.errors.length} failed`);
         }
         if (message.duplicates.length > 0) {
-            parts.push(`${message.duplicates.length} duplicate${message.duplicates.length === 1 ? '' : 's'}`);
+            parts.push(`${message.duplicates.length} duplicate${message.duplicates.length === 1 ? "" : "s"}`);
         }
 
-        return parts.join(', ');
+        return parts.join(", ");
     };
 
     return (
@@ -55,10 +53,10 @@ export function CardAdditionSummaryMessage({
             <div className="max-w-[95%] rounded-lg border-green-400 border-l-4 bg-green-50 px-4 py-2 text-gray-700">
                 <div className="font-mono text-sm">
                     <div className="mb-1 font-bold text-green-600">
-                        ✅ Added {totalCards} card{totalCards === 1 ? '' : 's'}
+                        ✅ Added {totalCards} card{totalCards === 1 ? "" : "s"}
                         {needsAction > 0 && (
                             <span className="ml-2 text-orange-600">
-                                ({needsAction} need{needsAction === 1 ? 's' : ''} action)
+                                ({needsAction} need{needsAction === 1 ? "s" : ""} action)
                             </span>
                         )}
                     </div>
@@ -69,22 +67,22 @@ export function CardAdditionSummaryMessage({
                                 onClick={() => setShowDetails(!showDetails)}
                                 className="ml-2 text-blue-500 text-xs hover:underline"
                             >
-                                {showDetails ? 'hide details' : 'show details'}
+                                {showDetails ? "hide details" : "show details"}
                             </button>
                         )}
                     </div>
 
                     {showDetails && (
-                        <div className="mt-2 border-gray-300 border-t pt-2 space-y-3">
+                        <div className="mt-2 space-y-3 border-gray-300 border-t pt-2">
                             {/* Successes */}
                             {message.successes.length > 0 && (
                                 <div>
-                                    <div className="font-semibold text-green-600 text-xs mb-1">
+                                    <div className="mb-1 font-semibold text-green-600 text-xs">
                                         ✅ Successfully Added ({message.successes.length})
                                     </div>
                                     <div className="space-y-1">
                                         {message.successes.map((success, index) => (
-                                            <div key={index} className="text-xs pl-2 border-l-2 border-green-200">
+                                            <div key={index} className="border-green-200 border-l-2 pl-2 text-xs">
                                                 <span className="font-mono">#{success.noteId}</span> - {success.key}
                                             </div>
                                         ))}
@@ -95,12 +93,12 @@ export function CardAdditionSummaryMessage({
                             {/* Updates */}
                             {message.updates.length > 0 && (
                                 <div>
-                                    <div className="font-semibold text-blue-600 text-xs mb-1">
+                                    <div className="mb-1 font-semibold text-blue-600 text-xs">
                                         🔄 Updated ({message.updates.length})
                                     </div>
                                     <div className="space-y-1">
                                         {message.updates.map((update, index) => (
-                                            <div key={index} className="text-xs pl-2 border-l-2 border-blue-200">
+                                            <div key={index} className="border-blue-200 border-l-2 pl-2 text-xs">
                                                 <span className="font-mono">#{update.noteId}</span> - {update.key}
                                             </div>
                                         ))}
@@ -111,14 +109,15 @@ export function CardAdditionSummaryMessage({
                             {/* Duplicates */}
                             {message.duplicates.length > 0 && (
                                 <div>
-                                    <div className="font-semibold text-yellow-600 text-xs mb-1">
+                                    <div className="mb-1 font-semibold text-xs text-yellow-600">
                                         ⚠️ Duplicates Need Action ({message.duplicates.length})
                                     </div>
                                     <div className="space-y-2">
                                         {message.duplicates.map((duplicate, index) => (
-                                            <div key={index} className="text-xs pl-2 border-l-2 border-yellow-200">
+                                            <div key={index} className="border-yellow-200 border-l-2 pl-2 text-xs">
                                                 <div className="mb-1">
-                                                    <span className="font-mono">#{duplicate.noteId}</span> - {duplicate.key}
+                                                    <span className="font-mono">#{duplicate.noteId}</span> -{" "}
+                                                    {duplicate.key}
                                                 </div>
                                                 <div className="flex gap-2">
                                                     <button
@@ -150,13 +149,15 @@ export function CardAdditionSummaryMessage({
                             {/* Errors */}
                             {message.errors.length > 0 && (
                                 <div>
-                                    <div className="font-semibold text-red-600 text-xs mb-1">
+                                    <div className="mb-1 font-semibold text-red-600 text-xs">
                                         ❌ Errors ({message.errors.length})
                                     </div>
                                     <div className="space-y-1">
                                         {message.errors.map((error, index) => (
-                                            <div key={index} className="text-xs pl-2 border-l-2 border-red-200">
-                                                <div className="text-red-600">{error.key}: {error.error}</div>
+                                            <div key={index} className="border-red-200 border-l-2 pl-2 text-xs">
+                                                <div className="text-red-600">
+                                                    {error.key}: {error.error}
+                                                </div>
                                             </div>
                                         ))}
                                     </div>
