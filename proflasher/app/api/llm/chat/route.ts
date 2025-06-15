@@ -628,7 +628,7 @@ async function callLLMWithRetry(
                                 content: cardProposal.message,
                             } as LLMMessage);
                         }
-                        isDone = !!cardProposal.error || retryCount++ >= 3;
+                        isDone = !cardProposal.error || retryCount++ >= 3;
                     } else {
                         throw new Error(`Unknown tool call: ${functionName}`);
                     }
