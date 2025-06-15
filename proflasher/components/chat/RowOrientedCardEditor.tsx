@@ -183,7 +183,7 @@ export function RowOrientedCardEditor({
         Object.values(textareaRefs.current).forEach((textarea) => {
             if (textarea) resizeTextarea(textarea);
         });
-    }, []);
+    }, [textareaRefs.current, card]);
 
     return (
         <div className={`space-y-4 ${className}`}>
