@@ -201,14 +201,23 @@ export default function ChatPage() {
 
     // Helper function to find or create card addition summary message
     const findOrCreateSummaryMessage = (): CardAdditionSummaryType => {
-        // Find existing summary message (look from the end for most recent)
+        // Find the index of the most recent card proposal
+        let lastProposalIndex = -1;
         for (let i = messages.length - 1; i >= 0; i--) {
+            if (messages[i]?.type === "card_proposal") {
+                lastProposalIndex = i;
+                break;
+            }
+        }
+
+        // Find existing summary message that was created after the last proposal
+        for (let i = messages.length - 1; i > lastProposalIndex; i--) {
             if (messages[i]?.type === "card_addition_summary") {
                 return messages[i] as CardAdditionSummaryType;
             }
         }
 
-        // Create new summary message if none exists
+        // Create new summary message if none exists after the last proposal
         const newSummary: CardAdditionSummaryType = {
             type: "card_addition_summary",
             successes: [],
