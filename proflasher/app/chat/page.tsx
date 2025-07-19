@@ -13,7 +13,8 @@ import type { RowOrientedCard } from "~/lib/cardModel/tableCard";
 import { useFlashcard } from "~/lib/context/FlashcardContext";
 
 // LLM model name
-const LLM_MODEL_NAME = "gemini-2.5-flash-preview-04-17";
+const LLM_MODEL_NAME = "gemini-2.5-pro";
+// const LLM_MODEL_NAME = "gemini-2.5-flash-preview-04-17";
 
 // Message types for conversation history
 interface UserMessageType {

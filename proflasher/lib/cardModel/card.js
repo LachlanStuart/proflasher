@@ -250,7 +250,7 @@ function speak(event) {
     if (!word || word === "__") {
         return;
     }
-    word = word.replace(/\([^)]+\)/g, " ").replace(/\//g, " ");
+    word = word.replace(/\([^)]+\)/g, " ").replace(/[/{}()]/g, "");
     const speech = new SpeechSynthesisUtterance(word);
     speech.text = word;
     speech.voice = voice;
