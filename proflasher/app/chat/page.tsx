@@ -3,7 +3,7 @@
 import type React from "react";
 import { useRef, useState } from "react";
 import { AnkiSearchMessage } from "~/components/chat/AnkiSearchMessage";
-import { CardAdditionSummaryMessage } from "~/components/chat/CardAdditionSummaryMessage";
+
 import { CardProposalMessage } from "~/components/chat/CardProposalMessage";
 import { ErrorMessage } from "~/components/chat/ErrorMessage";
 import { GetNotesMessage } from "~/components/chat/GetNotesMessage";
@@ -72,8 +72,7 @@ type ConversationMessage =
     | ErrorMessageType
     | AnkiSearchMessageType
     | CardProposalMessageType
-    | GetNotesMessageType
-    | CardAdditionSummaryType;
+    | GetNotesMessageType;
 
 export default function ChatPage() {
     const [messages, setMessages] = useState<ConversationMessage[]>([]);
@@ -200,51 +199,7 @@ export default function ChatPage() {
         }
     };
 
-    // Helper function to find or create card addition summary message
-    const findOrCreateSummaryMessage = (): CardAdditionSummaryType => {
-        // Find the index of the most recent card proposal
-        let lastProposalIndex = -1;
-        for (let i = messages.length - 1; i >= 0; i--) {
-            if (messages[i]?.type === "card_proposal") {
-                lastProposalIndex = i;
-                break;
-            }
-        }
 
-        // Find existing summary message that was created after the last proposal
-        for (let i = messages.length - 1; i > lastProposalIndex; i--) {
-            if (messages[i]?.type === "card_addition_summary") {
-                return messages[i] as CardAdditionSummaryType;
-            }
-        }
-
-        // Create new summary message if none exists after the last proposal
-        const newSummary: CardAdditionSummaryType = {
-            type: "card_addition_summary",
-            successes: [],
-            errors: [],
-            duplicates: [],
-            updates: [],
-        };
-
-        setMessages((prev) => [...prev, newSummary]);
-        return newSummary;
-    };
-
-    // Helper function to update summary message without scrolling
-    const updateSummaryMessage = (updatedSummary: CardAdditionSummaryType) => {
-        setMessages((prev) => {
-            const updated = [...prev];
-            // Find the summary message and update it
-            for (let i = updated.length - 1; i >= 0; i--) {
-                if (updated[i]?.type === "card_addition_summary") {
-                    updated[i] = updatedSummary;
-                    break;
-                }
-            }
-            return updated;
-        });
-    };
 
     // Handle updating existing note
     const handleUpdateNote = async (
@@ -267,37 +222,14 @@ export default function ChatPage() {
                     noteId,
                 }),
             });
-
-            // Update summary without scrolling
-            const summary = findOrCreateSummaryMessage();
-            const updatedSummary: CardAdditionSummaryType = {
-                ...summary,
-                updates: [...summary.updates, { noteId, key: fields.Key || `Note ${noteId}` }],
-                // Remove from duplicates if it was there
-                duplicates: summary.duplicates.filter((d) => d.noteId !== noteId),
-            };
-            updateSummaryMessage(updatedSummary);
         } catch (error) {
             console.error("Error updating note:", error);
-
-            // Update summary with error
-            const summary = findOrCreateSummaryMessage();
-            const updatedSummary: CardAdditionSummaryType = {
-                ...summary,
-                errors: [
-                    ...summary.errors,
-                    {
-                        key: fields.Key || `Note ${noteId}`,
-                        error: `Update failed: ${error instanceof Error ? error.message : String(error)}`,
-                    },
-                ],
-            };
-            updateSummaryMessage(updatedSummary);
+            throw error; // Re-throw so the component can handle it
         }
     };
 
     // Handle adding card to Anki
-    const handleAddToAnki = async (card: Record<string, string>, modelName: string, activeCardTypes: string[]) => {
+    const handleAddToAnki = async (card: Record<string, string>, modelName: string, activeCardTypes: string[]): Promise<CardAdditionSummaryType | void> => {
         try {
             // Add note to Anki via server API
             const response = await fetch("/api/anki/cards", {
@@ -315,12 +247,12 @@ export default function ChatPage() {
             const data = await response.json();
 
             if (response.status === 409) {
-                // Handle duplicate card by adding to summary
-                const summary = findOrCreateSummaryMessage();
-                const updatedSummary: CardAdditionSummaryType = {
-                    ...summary,
+                // Handle duplicate card - return summary for component to handle
+                return {
+                    type: "card_addition_summary" as const,
+                    successes: [],
+                    errors: [],
                     duplicates: [
-                        ...summary.duplicates,
                         {
                             noteId: data.noteId,
                             key: card.Key || `Note ${data.noteId}`,
@@ -329,9 +261,8 @@ export default function ChatPage() {
                             activeCardTypes,
                         },
                     ],
+                    updates: [],
                 };
-                updateSummaryMessage(updatedSummary);
-                return;
             }
 
             if (!response.ok) {
@@ -341,32 +272,33 @@ export default function ChatPage() {
             const { noteId } = data;
 
             if (noteId) {
-                // Add to summary without scrolling
-                const summary = findOrCreateSummaryMessage();
-                const updatedSummary: CardAdditionSummaryType = {
-                    ...summary,
-                    successes: [...summary.successes, { noteId, key: card.Key || `Note ${noteId}` }],
+                // Return success summary for component to handle
+                return {
+                    type: "card_addition_summary" as const,
+                    successes: [{ noteId, key: card.Key || `Note ${noteId}` }],
+                    errors: [],
+                    duplicates: [],
+                    updates: [],
                 };
-                updateSummaryMessage(updatedSummary);
             } else {
                 throw new Error("Failed to add card to Anki");
             }
         } catch (error) {
             console.error("Error adding card to Anki:", error);
 
-            // Add error to summary
-            const summary = findOrCreateSummaryMessage();
-            const updatedSummary: CardAdditionSummaryType = {
-                ...summary,
+            // Return error summary for component to handle
+            return {
+                type: "card_addition_summary" as const,
+                successes: [],
                 errors: [
-                    ...summary.errors,
                     {
                         key: card.Key || "Unknown card",
                         error: error instanceof Error ? error.message : String(error),
                     },
                 ],
+                duplicates: [],
+                updates: [],
             };
-            updateSummaryMessage(updatedSummary);
         }
     };
 
@@ -393,18 +325,16 @@ export default function ChatPage() {
                                 return <GetNotesMessage key={index} message={message} />;
                             case "card_proposal":
                                 return (
-                                    <CardProposalMessage key={index} message={message} onAddToAnki={handleAddToAnki} />
-                                );
-
-                            case "card_addition_summary":
-                                return (
-                                    <CardAdditionSummaryMessage
+                                    <CardProposalMessage
                                         key={index}
                                         message={message}
+                                        onAddToAnki={handleAddToAnki}
                                         onShowInAnki={handleShowInAnki}
                                         onUpdate={handleUpdateNote}
                                     />
                                 );
+
+
                             default:
                                 return null;
                         }

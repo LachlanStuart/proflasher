@@ -14,6 +14,21 @@ interface CardProposalMessageType {
     afterCardsMessageToUser?: string;
 }
 
+// Define the CardAdditionSummaryType locally
+interface CardAdditionSummaryType {
+    type: "card_addition_summary";
+    successes: Array<{ noteId: number; key: string }>;
+    errors: Array<{ key: string; error: string }>;
+    duplicates: Array<{
+        noteId: number;
+        key: string;
+        fields: Record<string, string>;
+        modelName: string;
+        activeCardTypes: string[];
+    }>;
+    updates: Array<{ noteId: number; key: string }>;
+}
+
 interface CardProposalMessageProps {
     message: CardProposalMessageType;
     onAddToAnki: (
@@ -22,10 +37,12 @@ interface CardProposalMessageProps {
         activeCardTypes: string[],
         update?: boolean,
         noteId?: number,
-    ) => Promise<void>;
+    ) => Promise<CardAdditionSummaryType | void>;
+    onShowInAnki: (noteId: number) => void;
+    onUpdate: (modelName: string, fields: Record<string, string>, activeCardTypes: string[], noteId: number) => void;
 }
 
-export function CardProposalMessage({ message, onAddToAnki }: CardProposalMessageProps) {
+export function CardProposalMessage({ message, onAddToAnki, onShowInAnki, onUpdate }: CardProposalMessageProps) {
     const { language, activeCardTypes, setActiveCardTypes, template } = useFlashcard();
 
     // Use the row-oriented cards directly
@@ -36,6 +53,10 @@ export function CardProposalMessage({ message, onAddToAnki }: CardProposalMessag
     const [selectedCard, setSelectedCard] = useState(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isAddingAll, setIsAddingAll] = useState(false);
+
+    // State for addition summary
+    const [additionSummary, setAdditionSummary] = useState<CardAdditionSummaryType | null>(null);
+    const [showSummaryDetails, setShowSummaryDetails] = useState(false);
 
     // Handle row-oriented card changes
     const handleRowCardChange = (newCard: RowOrientedCard) => {
@@ -57,32 +78,87 @@ export function CardProposalMessage({ message, onAddToAnki }: CardProposalMessag
         }
     };
 
-    // Handle card submission
+    // Handle card submission with summary tracking
     const handleSubmit = async () => {
         setIsSubmitting(true);
         try {
             // Convert to column-oriented format for Anki compatibility
             const cardToSubmit = rowToColumnOriented(editedRowCards[selectedCard]!, template.tableDefinitions);
-            await onAddToAnki(cardToSubmit, template.noteType, activeCardTypes);
+            const result = await onAddToAnki(cardToSubmit, template.noteType, activeCardTypes);
+
+            // If the result is a summary, store it
+            if (result && typeof result === 'object' && 'type' in result && result.type === 'card_addition_summary') {
+                setAdditionSummary(result as CardAdditionSummaryType);
+            }
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    // Handle adding all cards from this proposal
+    // Handle adding all cards from this proposal with summary tracking
     const handleAddAllCards = async () => {
         if (isAddingAll) return;
 
         setIsAddingAll(true);
         try {
+            let allSuccesses: Array<{ noteId: number; key: string }> = [];
+            let allErrors: Array<{ key: string; error: string }> = [];
+            let allDuplicates: Array<{
+                noteId: number;
+                key: string;
+                fields: Record<string, string>;
+                modelName: string;
+                activeCardTypes: string[];
+            }> = [];
+            let allUpdates: Array<{ noteId: number; key: string }> = [];
+
             // Add each card from this proposal one by one
             for (let i = 0; i < editedRowCards.length; i++) {
                 const cardToSubmit = rowToColumnOriented(editedRowCards[i]!, template.tableDefinitions);
-                await onAddToAnki(cardToSubmit, template.noteType, activeCardTypes);
+                const result = await onAddToAnki(cardToSubmit, template.noteType, activeCardTypes);
+
+                // Collect results if they're summaries
+                if (result && typeof result === 'object' && 'type' in result && result.type === 'card_addition_summary') {
+                    const summary = result as CardAdditionSummaryType;
+                    allSuccesses.push(...summary.successes);
+                    allErrors.push(...summary.errors);
+                    allDuplicates.push(...summary.duplicates);
+                    allUpdates.push(...summary.updates);
+                }
+            }
+
+            // Create combined summary
+            if (allSuccesses.length > 0 || allErrors.length > 0 || allDuplicates.length > 0 || allUpdates.length > 0) {
+                setAdditionSummary({
+                    type: 'card_addition_summary',
+                    successes: allSuccesses,
+                    errors: allErrors,
+                    duplicates: allDuplicates,
+                    updates: allUpdates,
+                });
             }
         } finally {
             setIsAddingAll(false);
         }
+    };
+
+    // Generate summary text for the addition summary
+    const getSummaryText = (summary: CardAdditionSummaryType) => {
+        const parts = [];
+        if (summary.successes.length > 0) {
+            parts.push(`${summary.successes.length} added`);
+        }
+        if (summary.updates.length > 0) {
+            parts.push(`${summary.updates.length} updated`);
+        }
+        if (summary.errors.length > 0) {
+            parts.push(`${summary.errors.length} failed`);
+        }
+        if (summary.duplicates.length > 0) {
+            parts.push(`${summary.duplicates.length} duplicate${summary.duplicates.length === 1 ? "" : "s"}`);
+        }
+
+        return parts.join(", ");
     };
 
     // Get current card
@@ -183,6 +259,155 @@ export function CardProposalMessage({ message, onAddToAnki }: CardProposalMessag
 
                 {message.afterCardsMessageToUser && (
                     <div className="mt-3 text-green-700">{message.afterCardsMessageToUser}</div>
+                )}
+
+                {/* Addition Summary Section */}
+                {additionSummary && (
+                    <div className="mt-4 border-t border-green-300 pt-4">
+                        <div className="font-mono text-sm">
+                            <div className="mb-1 font-bold text-green-600">
+                                ✅ Added {additionSummary.successes.length + additionSummary.errors.length + additionSummary.duplicates.length + additionSummary.updates.length} card{(additionSummary.successes.length + additionSummary.errors.length + additionSummary.duplicates.length + additionSummary.updates.length) === 1 ? "" : "s"}
+                                {additionSummary.errors.length + additionSummary.duplicates.length > 0 && (
+                                    <span className="ml-2 text-orange-600">
+                                        ({additionSummary.errors.length + additionSummary.duplicates.length} need{(additionSummary.errors.length + additionSummary.duplicates.length) === 1 ? "s" : ""} action)
+                                    </span>
+                                )}
+                            </div>
+                            <div className="mb-2">
+                                <span className="text-gray-600">{getSummaryText(additionSummary)}</span>
+                                <button
+                                    onClick={() => setShowSummaryDetails(!showSummaryDetails)}
+                                    className="ml-2 text-blue-500 text-xs hover:underline"
+                                >
+                                    {showSummaryDetails ? "hide details" : "show details"}
+                                </button>
+                            </div>
+
+                            {showSummaryDetails && (
+                                <div className="mt-2 space-y-3 border-gray-300 border-t pt-2">
+                                    {/* Successes */}
+                                    {additionSummary.successes.length > 0 && (
+                                        <div>
+                                            <div className="mb-1 font-semibold text-green-600 text-xs">
+                                                ✅ Successfully Added ({additionSummary.successes.length})
+                                            </div>
+                                            <div className="space-y-1">
+                                                {additionSummary.successes.map((success, index) => (
+                                                    <div key={index} className="border-green-200 border-l-2 pl-2 text-xs">
+                                                        <span className="font-mono">#{success.noteId}</span> - {success.key}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Updates */}
+                                    {additionSummary.updates.length > 0 && (
+                                        <div>
+                                            <div className="mb-1 font-semibold text-blue-600 text-xs">
+                                                🔄 Updated ({additionSummary.updates.length})
+                                            </div>
+                                            <div className="space-y-1">
+                                                {additionSummary.updates.map((update, index) => (
+                                                    <div key={index} className="border-blue-200 border-l-2 pl-2 text-xs">
+                                                        <span className="font-mono">#{update.noteId}</span> - {update.key}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Duplicates */}
+                                    {additionSummary.duplicates.length > 0 && (
+                                        <div>
+                                            <div className="mb-1 font-semibold text-xs text-yellow-600">
+                                                ⚠️ Duplicates Need Action ({additionSummary.duplicates.length})
+                                            </div>
+                                            <div className="space-y-2">
+                                                {additionSummary.duplicates.map((duplicate, index) => (
+                                                    <div key={index} className="border-yellow-200 border-l-2 pl-2 text-xs">
+                                                        <div className="mb-1">
+                                                            <span className="font-mono">#{duplicate.noteId}</span> -{" "}
+                                                            {duplicate.key}
+                                                        </div>
+                                                        <div className="flex gap-2">
+                                                            <button
+                                                                onClick={() => onShowInAnki(duplicate.noteId)}
+                                                                className="rounded bg-blue-500 px-2 py-1 text-white text-xs hover:bg-blue-600"
+                                                            >
+                                                                Show in Anki
+                                                            </button>
+                                                            <button
+                                                                onClick={async () => {
+                                                                    try {
+                                                                        await onUpdate(
+                                                                            duplicate.modelName,
+                                                                            duplicate.fields,
+                                                                            duplicate.activeCardTypes,
+                                                                            duplicate.noteId,
+                                                                        );
+
+                                                                        // Update the local summary state
+                                                                        if (additionSummary) {
+                                                                            const updatedSummary: CardAdditionSummaryType = {
+                                                                                ...additionSummary,
+                                                                                updates: [...additionSummary.updates, { noteId: duplicate.noteId, key: duplicate.key }],
+                                                                                // Remove from duplicates
+                                                                                duplicates: additionSummary.duplicates.filter((d) => d.noteId !== duplicate.noteId),
+                                                                            };
+                                                                            setAdditionSummary(updatedSummary);
+                                                                        }
+                                                                    } catch (error) {
+                                                                        console.error("Error updating note:", error);
+
+                                                                        // Update summary with error
+                                                                        if (additionSummary) {
+                                                                            const updatedSummary: CardAdditionSummaryType = {
+                                                                                ...additionSummary,
+                                                                                errors: [
+                                                                                    ...additionSummary.errors,
+                                                                                    {
+                                                                                        key: duplicate.key,
+                                                                                        error: `Update failed: ${error instanceof Error ? error.message : String(error)}`,
+                                                                                    },
+                                                                                ],
+                                                                            };
+                                                                            setAdditionSummary(updatedSummary);
+                                                                        }
+                                                                    }
+                                                                }}
+                                                                className="rounded bg-green-500 px-2 py-1 text-white text-xs hover:bg-green-600"
+                                                            >
+                                                                Update
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Errors */}
+                                    {additionSummary.errors.length > 0 && (
+                                        <div>
+                                            <div className="mb-1 font-semibold text-red-600 text-xs">
+                                                ❌ Errors ({additionSummary.errors.length})
+                                            </div>
+                                            <div className="space-y-1">
+                                                {additionSummary.errors.map((error, index) => (
+                                                    <div key={index} className="border-red-200 border-l-2 pl-2 text-xs">
+                                                        <div className="text-red-600">
+                                                            {error.key}: {error.error}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 )}
             </div>
         </div>
