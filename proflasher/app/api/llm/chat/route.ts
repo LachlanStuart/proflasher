@@ -206,7 +206,7 @@ async function getNotes(keys: string[], lang: string, toolCallId: string): Promi
 
         // Search for notes with the specific Key field value
         const noteIdsByKey = await Promise.all(
-            keys.map(async (key) => [key, await Anki.findNotes(`note:${noteType} Key:${key}`)]),
+            keys.map(async (key) => [key, await Anki.findNotes(`note:${noteType} Key:"${key}"`)]),
         );
 
         const noteInfos = [];
